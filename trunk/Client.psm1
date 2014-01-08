@@ -23,33 +23,33 @@ Function Get-CoreServiceBinding
 		"LDAP" 
 		{ 
 			$binding = New-Object System.ServiceModel.WSHttpBinding;
-			$binding.Security.Mode = "Message";
+			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Message;
 			$binding.Security.Transport.ClientCredentialType = "Basic";
 		}
 		"LDAP-SSL"
 		{
 			$binding = New-Object System.ServiceModel.WSHttpBinding;
-			$binding.Security.Mode = "Transport";
+			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Transport;
 			$binding.Security.Transport.ClientCredentialType = "Basic";
 		}
 		"netTcp" 
 		{ 
 			$binding = New-Object System.ServiceModel.NetTcpBinding; 
 			$binding.transactionFlow = $true;
-			$binding.transactionProtocol = "OleTransactions";
-			$binding.Security.Mode = "Transport";
+			$binding.transactionProtocol = [ServiceModel.TransactionProtocol]::OleTransactions;
+			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Transport;
 			$binding.Security.Transport.ClientCredentialType = "Windows";
 		}
 		"SSL"
 		{
 			$binding = New-Object System.ServiceModel.WSHttpBinding;
-			$binding.Security.Mode = "Transport";
+			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Transport;
 			$binding.Security.Transport.ClientCredentialType = "Windows";
 		}
 		default 
 		{ 
 			$binding = New-Object System.ServiceModel.WSHttpBinding; 
-			$binding.Security.Mode = "Message";
+			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Message;
 			$binding.Security.Transport.ClientCredentialType = "Windows";
 		}
 	}
