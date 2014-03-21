@@ -85,7 +85,7 @@ function Get-TridionUser
             }
             finally
             {
-                $client.Close() | Out-Null;
+                if ($client -ne $null) { $client.Close() | Out-Null; }
             }
         }
     }
@@ -219,7 +219,7 @@ function New-TridionGroup
             }
             finally
             {
-                $client.Close() | Out-Null;
+                if ($client -ne $null) { $client.Close() | Out-Null; }
             }
         }
     }
@@ -334,7 +334,7 @@ function New-TridionUser
             }
             finally
             {
-                $client.Close() | Out-Null;
+                if ($client -ne $null) { $client.Close() | Out-Null; }
             }
         }
     }
@@ -396,7 +396,7 @@ Function Get-TridionUsers
             }
             finally
             {
-                $client.Close() | Out-Null;
+                if ($client -ne $null) { $client.Close() | Out-Null; }
             }
         }
     }

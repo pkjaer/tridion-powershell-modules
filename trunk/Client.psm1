@@ -96,7 +96,7 @@ Function Get-TridionCoreServiceClient
         }
         finally
         {
-            $client.Close() | Out-Null;
+            if ($client -ne $null) { $client.Close() | Out-Null; }
         }
     }
 
