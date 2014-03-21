@@ -62,7 +62,7 @@ function Get-TridionPublications
             }
             finally
             {
-                $client.Close() | Out-Null;
+                if ($client -ne $null) { $client.Close() | Out-Null; }
             }
         }
     }
@@ -113,22 +113,25 @@ Function Get-TridionItem
 
     Process
     {
-        try
+		$client = Get-TridionCoreServiceClient;
+        if ($client -ne $null)
         {
-            $client = Get-TridionCoreServiceClient
-            if ($client.IsExistingObject($id))
-            {
-                $client.Read($id, (New-Object Tridion.ContentManager.CoreService.Client.ReadOptions));
-            }
-            else
-            {
-                Write-Host "There is no item with ID '$id'.";
-            }
-        }
-        finally
-        {
-            $client.Close() | Out-Null;
-        }
+			try
+			{
+				if ($client.IsExistingObject($id))
+				{
+					$client.Read($id, (New-Object Tridion.ContentManager.CoreService.Client.ReadOptions));
+				}
+				else
+				{
+					Write-Host "There is no item with ID '$id'.";
+				}
+			}
+			finally
+			{
+                if ($client -ne $null) { $client.Close() | Out-Null; }
+			}
+		}
     }
 }
 
