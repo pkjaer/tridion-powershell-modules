@@ -1,7 +1,5 @@
 #Requires -version 2.0
 
-$ErrorActionPreference = "Stop";
-
 <#
 **************************************************
 * Private members
@@ -14,7 +12,7 @@ $ErrorActionPreference = "Stop";
 * Public members
 **************************************************
 #>
-function Get-TridionPublications
+function Get-Publications
 {
     <#
     .Synopsis
@@ -41,35 +39,50 @@ function Get-TridionPublications
 
     .Example
     Get-TridionPublications
+	Returns a list of all Publications within Tridion.
+	
+	.Example
+	Get-TridionPublications -PublicationType Web
+	Returns a list of all 'Web' Publications within Tridion.
 
     .Example
     Get-TridionPublications | Select-Object Title, Id, Key
+	Returns a list of the Title, Id, and Key of all Publications within Tridion.
     
     #>
     [CmdletBinding()]
-	Param()
+	Param(
+		# The type of Publications to include in the list. Examples include 'Web', 'Content', and 'Mobile'. Omit to retrieve all Publications.
+		[string] $PublicationType
+	)
+	
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
 	
     Process
     {
-        $client = Get-TridionCoreServiceClient;
         if ($client -ne $null)
         {
-            try
-            {
-                Write-Host "Loading list of Publications...";
-                $filter = New-Object Tridion.ContentManager.CoreService.Client.PublicationsFilterData;
-                $client.GetSystemWideList($filter);
-            }
-            finally
-            {
-                if ($client -ne $null) { $client.Close() | Out-Null; }
-            }
+			Write-Verbose "Loading list of Publications...";
+			$filter = New-Object Tridion.ContentManager.CoreService.Client.PublicationsFilterData;
+			if ($PublicationType)
+			{
+				$filter.PublicationTypeName = $PublicationType;
+			}
+			return $client.GetSystemWideList($filter);
         }
     }
+	
+	End
+	{
+		if ($client -ne $null) { $client.Close() | Out-Null; }
+	}
 }
 
 
-Function Get-TridionItem
+Function Get-Item
 {
     <#
     .Synopsis
@@ -92,47 +105,55 @@ Function Get-TridionItem
     https://code.google.com/p/tridion-powershell-modules/
 
     .Example
-    Get-TridionItem "tcm:2-44"
+    Get-TridionItem -Id "tcm:2-44"
 	Reads a Component.
 
     .Example
-    Get-TridionItem "tcm:2-55-8"
+    Get-TridionItem -Id "tcm:2-55-8"
 	Reads a Schema.
 
     .Example
-    Get-TridionItem "tcm:2-44" | Select-Object Id, Title
+    Get-TridionItem -Id "tcm:2-44" | Select-Object Id, Title
 	Reads a Component and outputs just the ID and Title of it.
+	
+	.Example
+	Get-TridionPublications | Get-TridionItem
+	Reads every Publication within Tridion and returns the full data for each.
     
     #>
     [CmdletBinding()]
     Param
     (
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        $id
+		# The TCM URI or WebDAV URL of the item to retrieve.
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Id
     )
-
+	
+	Begin
+	{
+		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
     Process
     {
-		$client = Get-TridionCoreServiceClient;
         if ($client -ne $null)
         {
-			try
+			if ($client.IsExistingObject($Id))
 			{
-				if ($client.IsExistingObject($id))
-				{
-					$client.Read($id, (New-Object Tridion.ContentManager.CoreService.Client.ReadOptions));
-				}
-				else
-				{
-					Write-Host "There is no item with ID '$id'.";
-				}
+				return $client.Read($Id, (New-Object Tridion.ContentManager.CoreService.Client.ReadOptions));
 			}
-			finally
+			else
 			{
-                if ($client -ne $null) { $client.Close() | Out-Null; }
+				Write-Error "There is no item with ID '$Id'.";
 			}
 		}
     }
+	
+	End
+	{
+		if ($client -ne $null) { $client.Close() | Out-Null; }
+	}
 }
 
 <#
@@ -140,5 +161,5 @@ Function Get-TridionItem
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-TridionItem
-Export-ModuleMember Get-TridionPublications
+Export-ModuleMember Get-Item
+Export-ModuleMember Get-Publications

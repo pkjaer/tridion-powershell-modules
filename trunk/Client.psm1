@@ -1,7 +1,5 @@
 #Requires -version 2.0
 
-$ErrorActionPreference = "Stop";
-
 <#
 **************************************************
 * Private members
@@ -10,15 +8,14 @@ $ErrorActionPreference = "Stop";
 
 Function Get-CoreServiceBinding
 {
-	$settings = Get-TridionCoreServiceSettings
-	$type = $settings.ConnectionType;
-	
+	$settings = Get-CoreServiceSettings
+
 	$quotas = New-Object System.Xml.XmlDictionaryReaderQuotas;
 	$quotas.MaxStringContentLength = 10485760;
 	$quotas.MaxArrayLength = 10485760;
 	$quotas.MaxBytesPerRead = 10485760;
 
-	switch($type)
+	switch($settings.ConnectionType)
 	{
 		"LDAP" 
 		{ 
@@ -64,7 +61,7 @@ Function Get-CoreServiceBinding
 * Public members
 **************************************************
 #>
-Function Get-TridionCoreServiceClient
+Function Get-CoreServiceClient
 {
     <#
     .Synopsis
@@ -102,7 +99,12 @@ Function Get-TridionCoreServiceClient
 
     #>
     [CmdletBinding()]
-    Param()
+    Param(
+		# The name (including domain) of the user to impersonate when accessing Tridion. 
+		# When omitted the current user will be executing all Tridion commands.
+        [Parameter(ValueFromPipeline=$true)]
+		[string]$ImpersonateUserName
+	)
 
     Begin
     {
@@ -110,7 +112,7 @@ Function Get-TridionCoreServiceClient
         Add-Type -AssemblyName System.ServiceModel
 
         # Load information about the Core Service client available on this system
-        $serviceInfo = Get-TridionCoreServiceSettings
+        $serviceInfo = Get-CoreServiceSettings
         
         Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.HostName);
         
@@ -124,11 +126,14 @@ Function Get-TridionCoreServiceClient
     {
         try
         {
-            $proxy = New-Object $serviceInfo.ClassName -ArgumentList $binding, $endpoint;
+			$proxy = New-Object $serviceInfo.ClassName -ArgumentList $binding, $endpoint;
 
-            Write-Verbose ("Connecting as {0}" -f $serviceInfo.UserName);
-            $proxy.Impersonate($serviceInfo.UserName) | Out-Null;
-            
+			if ($ImpersonateUserName)
+			{
+				Write-Verbose "Impersonating '$ImpersonateUserName'...";
+				$proxy.Impersonate($ImpersonateUserName) | Out-Null;
+			}
+			
             return $proxy;
         }
         catch [System.Exception]
@@ -145,4 +150,4 @@ Function Get-TridionCoreServiceClient
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-TridionCoreServiceClient
+Export-ModuleMember Get-CoreServiceClient
