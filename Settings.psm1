@@ -1,7 +1,5 @@
 #Requires -version 2.0
 
-$ErrorActionPreference = "Stop";
-
 <#
 **************************************************
 * Private members
@@ -114,8 +112,7 @@ Function Save-Settings($settings)
 		}
 		catch
 		{
-			Write-Host -ForegroundColor Red "Failed to save your settings for next time.";
-			Write-Host -ForegroundColor Red "Perhaps you don't have permissions to modify '$settingsFile'?";
+			Write-Error "Failed to save your settings for next time. Perhaps you don't have permissions to modify '$settingsFile'?";
 		}
 	}
 }
@@ -126,7 +123,7 @@ Function Save-Settings($settings)
 **************************************************
 #>
 
-Function Get-TridionCoreServiceSettings
+Function Get-CoreServiceSettings
 {
     <#
     .Synopsis
@@ -142,7 +139,7 @@ Function Get-TridionCoreServiceSettings
 	Process { return Get-Settings; }
 }
 
-Function Set-TridionCoreServiceSettings
+Function Set-CoreServiceSettings
 {
     <#
     .Synopsis
@@ -153,8 +150,7 @@ Function Set-TridionCoreServiceSettings
     https://code.google.com/p/tridion-powershell-modules/
 
     .Example
-    Set-TridionCoreServiceSettings -hostName "machine.domain" -version "2013-SP1" -connectionType netTcp
-	
+    Set-TridionCoreServiceSettings -HostName "machine.domain" -Version "2013-SP1" -ConnectionType netTcp
 	Makes the module connect to a Core Service hosted on "machine.domain", using netTcp bindings and the 2013 SP1 version of the service.
 	
     #>
@@ -162,34 +158,35 @@ Function Set-TridionCoreServiceSettings
     Param
     (
         [Parameter()]
-        [string]$hostName,
+		[ValidateNotNullOrEmpty()]
+        [string]$HostName,
 		
 		[ValidateSet('', '2011-SP1', '2013', '2013-SP1')]
-		[string]$version,
+		[string]$Version,
 		
 		[Parameter()]
-		[string]$userName,
+		[string]$UserName,
 		
 		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp')]
 		[Parameter()]
-		[string]$connectionType,
+		[string]$ConnectionType,
 		
 		[Parameter()]
-		[switch]$persist
+		[switch]$Persist
     )
 
     Process
     {
-		$hostNameSpecified = (![string]::IsNullOrEmpty($hostName));
-		$userNameSpecified = (![string]::IsNullOrEmpty($userName));
-		$versionSpecified = (![string]::IsNullOrEmpty($version));
-		$connectionTypeSpecified = (![string]::IsNullOrEmpty($connectionType));
+		$hostNameSpecified = (![string]::IsNullOrEmpty($HostName));
+		$userNameSpecified = (![string]::IsNullOrEmpty($UserName));
+		$versionSpecified = (![string]::IsNullOrEmpty($Version));
+		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
 		
 		$settings = Get-Settings;
-		if ($connectionTypeSpecified) { $settings.ConnectionType = $connectionType; }
-		if ($hostNameSpecified) { $settings.HostName = $hostName; }
-		if ($userNameSpecified) { $settings.UserName = $userName; }
-		if ($versionSpecified) { $settings.Version = $version; }
+		if ($connectionTypeSpecified) { $settings.ConnectionType = $ConnectionType; }
+		if ($hostNameSpecified) { $settings.HostName = $HostName; }
+		if ($userNameSpecified) { $settings.UserName = $UserName; }
+		if ($versionSpecified) { $settings.Version = $Version; }
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
 		{
@@ -229,7 +226,7 @@ Function Set-TridionCoreServiceSettings
 			}
 		}
 		
-		if ($persist)
+		if ($Persist)
 		{
 			Save-Settings $settings;
 		}
@@ -242,5 +239,5 @@ Function Set-TridionCoreServiceSettings
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-TridionCoreServiceSettings;
-Export-ModuleMember Set-TridionCoreServiceSettings;
+Export-ModuleMember Get-CoreServiceSettings;
+Export-ModuleMember Set-CoreServiceSettings;

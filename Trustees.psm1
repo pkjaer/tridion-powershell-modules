@@ -1,13 +1,12 @@
 #Requires -version 2.0
 
-$ErrorActionPreference = "Stop";
-
 <#
 **************************************************
 * Public members
 **************************************************
 #>
-function Get-TridionUser
+
+function Get-User
 {
     <#
     .Synopsis
@@ -35,313 +34,64 @@ function Get-TridionUser
 
     .Example
     Get-TridionUser | Format-List
-    
     Returns a formatted list of properties of the currently logged on user.
 
     .Example
     Get-TridionUser | Select-Object Title, LanguageId, LocaleId, Privileges
-    
     Returns the title, language, locale, and privileges (system administrator) of the currently logged on user.
     
     .Example
-    Get-TridionUser "tcm:0-12-65552"
-    
+    Get-TridionUser 'tcm:0-12-65552'
     Returns information about user #11 within Tridion (typically the Administrator user created during installation).
     
     #>
     [CmdletBinding()]
     Param
     (
-        [Parameter(ValueFromPipeline=$true)]
-        [string]$id
+		# The TCM URI of the user to load. If omitted, data for the current user is loaded instead.
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Id
     )
 
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
     
     Process
     {
-        $client = Get-TridionCoreServiceClient;
         if ($client -ne $null)
         {
-            try
-            {
-                if ([string]::IsNullOrEmpty($id))
-                {
-                    Write-Host "Loading current user...";
-                    $client.GetCurrentUser();
-                }
-                else
-                {
-                    Write-Host "Loading Tridion user...";
-                    if (!$client.IsExistingObject($id))
-                    {
-                        Write-Host "There is no such user in the system.";
-                        return $null;
-                    }
-                    
-                    $readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
-                    $readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::WebdavUrls -bor [Tridion.ContentManager.CoreService.Client.LoadFlags]::Expanded;
-                    $client.Read($id, $readOptions);
-                }
-            }
-            finally
-            {
-                if ($client -ne $null) { $client.Close() | Out-Null; }
-            }
+			if (-not $Id)
+			{
+				Write-Verbose "Loading current user...";
+				$client.GetCurrentUser();
+			}
+			else
+			{
+				Write-Verbose "Loading Tridion user...";
+				if (-not $client.IsExistingObject($Id))
+				{
+					Write-Error "The user '$Id' does not exist.";
+					return $null;
+				}
+				
+				$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+				$readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::WebdavUrls -bor [Tridion.ContentManager.CoreService.Client.LoadFlags]::Expanded;
+				return $client.Read($Id, $readOptions);
+			}
         }
     }
-}
-
-
-function New-TridionGroup
-{
-    <#
-    .Synopsis
-    Adds a new Group to Tridion Content Manager.
-
-    .Description
-    Adds a new Group to Tridion Content Manager with the given name. 
-    Optionally, you may specify a description for the Group. 
-	It can also be a member of other Groups and only be available under specific Publications.
-
-    .Notes
-     Example of properties available: Id, Title, Scope, GroupMemberships, etc.
-    
-    For a full list, consult the Content Manager Core Service API Reference Guide documentation 
-    (Tridion.ContentManager.Data.Security.GroupData object)
-
-    .Inputs
-    [string] name: the user name including the domain.
-    [string] description: a description of the Group. Defaults to the $name parameter.
-
-    .Outputs
-    Returns an object of type [Tridion.ContentManager.CoreService.Client.GroupData], representing the newly created Group.
-
-    .Link
-    Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
-
-    .Example
-    New-TridionGroup "Content Editors (NL)"
-    
-    Creates a new Group with the name "Content Editors (NL)". It is valid for all Publications.
-    
-    .Example
-    New-TridionGroup "Content Editors (NL)" -description "Dutch Content Editors"
-    
-    Creates a new Group with the name "Content Editors (NL)" and a description of "Dutch Content Editors". 
-	It is valid for all Publications.
-    
-    .Example
-    New-TridionGroup "Content Editors (NL)" -description "Dutch Content Editors" | Format-List
-    
-    Creates a new Group with the name "Content Editors (NL)" and a description of "Dutch Content Editors". 
-	It is valid for all Publications.
-    Displays all of the properties of the resulting Group as a list.
 	
-	.Example
-	New-TridionGroup -name "Content Editors (NL)" -description "Dutch Content Editors" -scope @("tcm:0-1-1", "tcm:0-2-1") -memberOf @("tcm:0-5-65568", "tcm:0-7-65568");
-	
-	Creates a new Group with the name "Content Editors (NL)" and a description of "Dutch Content Editors". 
-	It is only usable in Publication 1 and 2.
-	It is a member of the Author and Editor groups.    
-    #>
-    [CmdletBinding()]
-    Param(
-    
-            [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-            [string]$name,
-            
-            [Parameter()]
-            [string]$description,
-			
-			[Parameter()]
-			[string[]]$scope,
-			
-			[Parameter()]
-			[string[]]$memberOf
-    )
-
-    Process
-    {
-        $client = Get-TridionCoreServiceClient;
-        if ($client -ne $null)
-        {
-            try
-            {
-                if ($description -is [ScriptBlock]) 
-                { 
-                    [string]$groupDescription = $description.invoke() 
-                }
-                else
-                { 
-					$groupDescription = if ([string]::IsNullOrEmpty($description)) { $name } else { $description };
-                }
-
-                $readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
-                $readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::None;
-                
-				if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('string containerId') -gt 0)
-				{
-					$group = $client.GetDefaultData("Group", $null, $readOptions);
-				}
-				else
-				{
-					$group = $client.GetDefaultData("User", $null);
-				}
-                
-                $group.Title = $name;
-                $group.Description = $groupDescription;
-				
-				if (![string]::IsNullOrEmpty($scope))
-				{
-					foreach($publicationUri in $scope)
-					{
-						$link = New-Object Tridion.ContentManager.CoreService.Client.LinkWithIsEditableToRepositoryData;
-						$link.IdRef = $publicationUri;
-						$group.Scope += $link;
-					}
-				}
-				
-				if (![string]::IsNullOrEmpty($memberOf))
-				{
-					foreach($groupUri in $memberOf)
-					{
-						$groupData = New-Object Tridion.ContentManager.CoreService.Client.GroupMembershipData;
-						$groupLink = New-Object Tridion.ContentManager.CoreService.Client.LinkToGroupData;
-						$groupLink.IdRef = $groupUri;
-						$groupData.Group = $groupLink;
-						$group.GroupMemberships += $groupData;
-					}
-				}
-				
-                $client.Create($group, $readOptions);
-                Write-Host ("Group '{0}' has been created." -f $name);
-            }
-            finally
-            {
-                if ($client -ne $null) { $client.Close() | Out-Null; }
-            }
-        }
-    }
+	End
+	{
+		if ($client -ne $null) { $client.Close() | Out-Null; }
+	}
 }
 
 
-function New-TridionUser
-{
-    <#
-    .Synopsis
-    Adds a new user to Tridion Content Manager.
-
-    .Description
-    Adds a new user to Tridion Content Manager with the given user name and description (friendly name). 
-    Optionally, the user can be given system administrator rights with the Content Manager.
-
-    .Notes
-    Example of properties available: Id, Title, Key, PublicationPath, PublicationUrl, MultimediaUrl, etc.
-    
-    For a full list, consult the Content Manager Core Service API Reference Guide documentation 
-    (Tridion.ContentManager.Data.CommunicationManagement.PublicationData object)
-
-    .Inputs
-    [string] userName: the user name including the domain.
-    [string] description: the friendly name of the user, typically the full name. Defaults to the $userName parameter.
-    [bool] isAdmin: set to true if you wish to give the new user full administrator rights within the Content Manager. Defaults to $false.
-
-    .Outputs
-    Returns an object of type [Tridion.ContentManager.CoreService.Client.UserData], representing the newly created user.
-
-    .Link
-    Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
-
-    .Example
-    New-TridionUser "GLOBAL\user01"
-    
-    Adds "GLOBAL\user01" to the Content Manager with a description matching the user name and no administrator rights.
-    
-    .Example
-    New-TridionUser "GLOBAL\user01" "User 01"
-    
-    Adds "GLOBAL\user01" to the Content Manager with a description of "User 01" and no administrator rights.
-    
-    .Example
-    New-TridionUser -username GLOBAL\User01 -isAdmin $true
-    
-    Adds "GLOBAL\user01" to the Content Manager with a description matching the user name and system administrator rights.
-
-    .Example
-    New-TridionUser "GLOBAL\user01" "User 01" $true | Format-List
-    
-    Adds "GLOBAL\user01" to the Content Manager with a description of "User 01" and system administrator rights.
-    Displays all of the properties of the resulting user as a list.
-    
-    #>
-    [CmdletBinding()]
-    Param(
-    
-            [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-            [string]$userName,
-            
-            [Parameter()]
-            [string]$description,
-            
-            [Parameter()]
-            [bool]$isAdmin = $false
-    )
-
-    Process
-    {
-        $client = Get-TridionCoreServiceClient;
-        if ($client -ne $null)
-        {
-            try
-            {
-                if ($description -is [ScriptBlock]) 
-                { 
-                    [string]$userDescription = $description.invoke() 
-                }
-                else
-                {
-					$userDescription = if ([string]::IsNullOrEmpty($description)) { $userName } else { $description };
-                }
-
-                $readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
-                $readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::None;
-                
-				if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('string containerId') -gt 0)
-				{
-					$user = $client.GetDefaultData("User", $null, $readOptions);
-				}
-				else
-				{
-					$user = $client.GetDefaultData("User", $null);
-				}
-                
-                $user.Title = $userName;
-                $user.Description = $userDescription;
-
-                if ($isAdmin)
-                {
-                    $user.Privileges = 1;
-                }
-                else
-                {
-                    $user.Privileges = 0;
-                }
-                
-                $client.Create($user, $readOptions);
-                Write-Host ("User '{0}' has been added." -f $userDescription);
-            }
-            finally
-            {
-                if ($client -ne $null) { $client.Close() | Out-Null; }
-            }
-        }
-    }
-}
-
-
-Function Get-TridionUsers
+Function Get-Users
 {
     <#
     .Synopsis
@@ -368,38 +118,308 @@ Function Get-TridionUsers
 
     .Example
     Get-TridionUsers
-    
-    Gets a list of all users.
+    Gets a list of all users specifically added to the system (excludes predefined users like 'NT AUTHORITY\SYSTEM').
     
     .Example
-    Get-TridionUsers | Select-Object Id,Title,IsEnabled
-    
+    Get-TridionUsers -IncludePredefinedUsers | Select-Object Id,Title,IsEnabled
     Gets the ID, Title, and enabled status of all users.
     
     .Example
     Get-TridionUsers | Where-Object { $_.IsEnabled -eq $false } | Select-Object Id,Title,IsEnabled | Format-List
-    
     Gets the ID, Title, and enabled status of all disabled users in the system.
     Displays all of the properties as a list.
     
     #>
+    [CmdletBinding()]
+    Param
+    (
+		# If set, the list of users will include pre-defined system users like 'NT AUTHORITY\SYSTEM' and 'MTSUser'.
+        [Parameter()]
+        [switch]$IncludePredefinedUsers
+    )
+	
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
     Process
     {
-        $client = Get-TridionCoreServiceClient;
         if ($client -ne $null)
         {
-            try
-            {
-                Write-Host "Getting a list of Tridion users.";
-                $filter = New-Object Tridion.ContentManager.CoreService.Client.UsersFilterData;
-                $client.GetSystemWideList($filter);
-            }
-            finally
-            {
-                if ($client -ne $null) { $client.Close() | Out-Null; }
-            }
+			Write-Verbose "Getting a list of Tridion users.";
+			$filter = New-Object Tridion.ContentManager.CoreService.Client.UsersFilterData;
+			if (-not $IncludePredefinedUsers)
+			{
+				$filter.IsPredefined = $false;
+			}
+			$client.GetSystemWideList($filter);
         }
     }
+	
+	End
+	{
+		if ($client -ne $null) { $client.Close() | Out-Null; }
+	}
+}
+
+
+function New-Group
+{
+    <#
+    .Synopsis
+    Adds a new Group to Tridion Content Manager.
+
+    .Description
+    Adds a new Group to Tridion Content Manager with the given name. 
+    Optionally, you may specify a description for the Group. 
+	It can also be a member of other Groups and only be available under specific Publications.
+
+    .Notes
+     Example of properties available: Id, Title, Scope, GroupMemberships, etc.
+    
+    For a full list, consult the Content Manager Core Service API Reference Guide documentation 
+    (Tridion.ContentManager.Data.Security.GroupData object)
+
+    .Inputs
+    [string] Name: the user name including the domain.
+    [string] Description: a description of the Group. Defaults to the $Name parameter.
+
+    .Outputs
+    Returns an object of type [Tridion.ContentManager.CoreService.Client.GroupData], representing the newly created Group.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://code.google.com/p/tridion-powershell-modules/
+
+    .Example
+    New-TridionGroup -Name "Content Editors (NL)"
+    Creates a new Group with the name "Content Editors (NL)". It is valid for all Publications.
+    
+    .Example
+    New-TridionGroup -Name "Content Editors (NL)" -Description "Dutch Content Editors"
+    Creates a new Group with the name "Content Editors (NL)" and a description of "Dutch Content Editors". 
+	It is valid for all Publications.
+    
+    .Example
+    New-TridionGroup -Name "Content Editors (NL)" -Description "Dutch Content Editors" | Format-List
+    Creates a new Group with the name "Content Editors (NL)" and a description of "Dutch Content Editors". 
+	It is valid for all Publications.
+    Displays all of the properties of the resulting Group as a list.
+	
+	.Example
+	New-TridionGroup -Name "Content Editors (NL)" -Description "Dutch Content Editors" -Scope @("tcm:0-1-1", "tcm:0-2-1") -MemberOf @("tcm:0-5-65568", "tcm:0-7-65568");
+	Creates a new Group with the name "Content Editors (NL)" and a description of "Dutch Content Editors". 
+	It is only usable in Publication 1 and 2.
+	It is a member of the Author and Editor groups.    
+	
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Medium')]
+    Param(
+			# The name of the new Group. This is displayed to end-users.
+            [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+			[ValidateNotNullOrEmpty()]
+            [string]$Name,
+            
+			# The description of the new Group. Generally used to indicate the purpose of the group. 
+            [Parameter()]
+            [string]$Description,
+			
+			# A list of URIs for the Publications in which the new Group applies.
+			[Parameter()]
+			[string[]]$Scope,
+			
+			# A list of URIs for the existing Groups that the new Group should be a part of.
+			[Parameter()]
+			[string[]]$MemberOf
+    )
+	
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+
+    Process
+    {
+        if ($client -ne $null)
+        {
+			if ($Description -is [ScriptBlock]) 
+			{ 
+				[string]$groupDescription = $Description.invoke() 
+			}
+			else
+			{ 
+				$groupDescription = if ($Description) { $Description } else { $Name };
+			}
+
+			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+			$readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::None;
+			
+			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('string containerId') -gt 0)
+			{
+				$group = $client.GetDefaultData("Group", $null, $readOptions);
+			}
+			else
+			{
+				$group = $client.GetDefaultData("Group", $null);
+			}
+			
+			$group.Title = $Name;
+			$group.Description = $groupDescription;
+			
+			if ($Scope)
+			{
+				foreach($publicationUri in $Scope)
+				{
+					$link = New-Object Tridion.ContentManager.CoreService.Client.LinkWithIsEditableToRepositoryData;
+					$link.IdRef = $publicationUri;
+					$group.Scope += $link;
+				}
+			}
+			
+			if ($MemberOf)
+			{
+				foreach($groupUri in $MemberOf)
+				{
+					$groupData = New-Object Tridion.ContentManager.CoreService.Client.GroupMembershipData;
+					$groupLink = New-Object Tridion.ContentManager.CoreService.Client.LinkToGroupData;
+					$groupLink.IdRef = $groupUri;
+					$groupData.Group = $groupLink;
+					$group.GroupMemberships += $groupData;
+				}
+			}
+			
+			if ($PSCmdLet.ShouldProcess("Group { Name: '$($group.Title)', Description: '$($group.Description)' }", "Create")) 
+			{
+				$client.Create($group, $readOptions);
+				Write-Verbose ("Group '{0}' has been created." -f $Name);
+			}
+        }
+    }
+	
+	End
+	{
+		if ($client -ne $null) { $client.Close() | Out-Null; }
+	}	
+}
+
+
+function New-User
+{
+    <#
+    .Synopsis
+    Adds a new user to Tridion Content Manager.
+
+    .Description
+    Adds a new user to Tridion Content Manager with the given user name and description (friendly name). 
+    Optionally, the user can be given system administrator rights with the Content Manager.
+
+    .Notes
+    Example of properties available: Id, Title, Key, PublicationPath, PublicationUrl, MultimediaUrl, etc.
+    
+    For a full list, consult the Content Manager Core Service API Reference Guide documentation 
+    (Tridion.ContentManager.Data.CommunicationManagement.PublicationData object)
+
+    .Inputs
+    [string] userName: the user name including the domain.
+    [string] description: the friendly name of the user, typically the full name. Defaults to the $UserName parameter.
+    [bool] isAdmin: set to true if you wish to give the new user full administrator rights within the Content Manager. Defaults to $false.
+
+    .Outputs
+    Returns an object of type [Tridion.ContentManager.CoreService.Client.UserData], representing the newly created user.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://code.google.com/p/tridion-powershell-modules/
+
+    .Example
+    New-TridionUser -UserName "GLOBAL\user01"
+    Adds "GLOBAL\user01" to the Content Manager with a description matching the user name and no administrator rights.
+    
+    .Example
+    New-TridionUser -UserName "GLOBAL\user01" -Description "User 01"
+    Adds "GLOBAL\user01" to the Content Manager with a description of "User 01" and no administrator rights.
+    
+    .Example
+    New-TridionUser -Username GLOBAL\User01 -MakeAdministrator
+    Adds "GLOBAL\user01" to the Content Manager with a description matching the user name and system administrator rights.
+
+    .Example
+    New-TridionUser -UserName "GLOBAL\user01" -Description "User 01" -MakeAdministrator | Format-List
+    Adds "GLOBAL\user01" to the Content Manager with a description of "User 01" and system administrator rights.
+    Displays all of the properties of the resulting user as a list.
+    
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Medium')]
+    Param(
+			# The username (including domain) of the new User
+            [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+			[ValidateNotNullOrEmpty()]
+            [string]$UserName,
+			
+            # The description (or 'friendly name') of the user. This is displayed throughout the UI.
+            [Parameter()]
+            [string]$Description,
+			
+            # If set, the new user will have system administrator privileges. Use with caution.
+            [Parameter()]
+            [switch]$MakeAdministrator
+    )
+	
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+
+    Process
+    {
+        if ($client -ne $null)
+        {
+			if ($Description -is [ScriptBlock]) 
+			{ 
+				[string]$userDescription = $Description.invoke() 
+			}
+			else
+			{
+				$userDescription = if ([string]::IsNullOrEmpty($Description)) { $UserName } else { $Description };
+			}
+
+			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+			$readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::None;
+			
+			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('string containerId') -gt 0)
+			{
+				$user = $client.GetDefaultData("User", $null, $readOptions);
+			}
+			else
+			{
+				$user = $client.GetDefaultData("User", $null);
+			}
+			
+			$user.Title = $UserName;
+			$user.Description = $userDescription;
+
+			if ($MakeAdministrator)
+			{
+				$user.Privileges = 1;
+			}
+			else
+			{
+				$user.Privileges = 0;
+			}
+			
+			if ($PSCmdLet.ShouldProcess("User { Name: '$($user.Title)', Description: '$($user.Description)', Administrator: $MakeAdministrator }", "Create")) 
+			{
+				$client.Create($user, $readOptions);
+				Write-Verbose ("User '{0}' has been added." -f $userDescription);
+			}
+        }
+    }
+	
+	End
+	{
+		if ($client -ne $null) { $client.Close() | Out-Null; }
+	}	
 }
 
 <#
@@ -407,7 +427,7 @@ Function Get-TridionUsers
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-TridionUser
-Export-ModuleMember Get-TridionUsers
-Export-ModuleMember New-TridionGroup
-Export-ModuleMember New-TridionUser
+Export-ModuleMember Get-User
+Export-ModuleMember Get-Users
+Export-ModuleMember New-Group
+Export-ModuleMember New-User

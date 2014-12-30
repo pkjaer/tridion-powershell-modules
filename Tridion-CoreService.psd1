@@ -12,7 +12,7 @@
 ModuleToProcess = ''
 
 # Version number of this module.
-ModuleVersion = '1.2.0.0'
+ModuleVersion = '1.3.0.0'
 
 # ID used to uniquely identify this module
 GUID = '32e566fb-d28d-43e7-8786-1181ef91a9fd'
@@ -86,5 +86,6 @@ FileList = @("Client.psm1", "Items.psm1", "Settings.psm1", "Trustees.psm1")
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
 
+DefaultCommandPrefix = 'Tridion'
 }
 
