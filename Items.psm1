@@ -35,7 +35,7 @@ function Get-Publications
 
     .Link
     Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
+    https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
     Get-TridionPublications
@@ -102,7 +102,7 @@ Function Get-Item
 
     .Link
     Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
+    https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
     Get-TridionItem -Id "tcm:2-44"

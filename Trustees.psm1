@@ -30,7 +30,7 @@ function Get-User
 
     .Link
     Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
+    https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
     Get-TridionUser | Format-List
@@ -114,7 +114,7 @@ Function Get-Users
 
     .Link
     Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
+    https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
     Get-TridionUsers
@@ -190,7 +190,7 @@ function New-Group
 
     .Link
     Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
+    https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
     New-TridionGroup -Name "Content Editors (NL)"
@@ -330,7 +330,7 @@ function New-User
 
     .Link
     Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
+    https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
     New-TridionUser -UserName "GLOBAL\user01"

@@ -131,7 +131,7 @@ Function Get-CoreServiceSettings
 
     .Link
     Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
+    https://github.com/pkjaer/tridion-powershell-modules
 	#>
     [CmdletBinding()]
     Param()
@@ -147,7 +147,7 @@ Function Set-CoreServiceSettings
 
     .Link
     Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
+    https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
     Set-TridionCoreServiceSettings -HostName "machine.domain" -Version "2013-SP1" -ConnectionType netTcp

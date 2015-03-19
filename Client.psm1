@@ -81,7 +81,7 @@ Function Get-CoreServiceClient
 
     .Link
     Get the latest version of this script from the following URL:
-    https://code.google.com/p/tridion-powershell-modules/
+    https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
     $client = Get-TridionCoreServiceClient;
