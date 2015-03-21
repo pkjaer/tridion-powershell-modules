@@ -27,7 +27,7 @@ function EnsureDirectoriesExist
 	# Locate the user's module directory
     $modulePaths = @($env:PSModulePath -split ';');
 	$expectedPath = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath WindowsPowerShell\Modules;
-	$destination = $modulePaths | Where-Object { $_ -eq $expectedPath };
+	$destination = $modulePaths | Where-Object { $_ -eq $expectedPath } | Select -First 1;
 	
 	if (-not $destination) 
 	{
