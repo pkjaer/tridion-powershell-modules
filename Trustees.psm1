@@ -1,4 +1,4 @@
-#Requires -version 2.0
+#Requires -version 3.0
 
 <#
 **************************************************
@@ -86,7 +86,7 @@ function Get-User
 	
 	End
 	{
-		if ($client -ne $null) { $client.Close() | Out-Null; }
+		Close-CoreServiceClient $client;
 	}
 }
 
@@ -159,7 +159,7 @@ Function Get-Users
 	
 	End
 	{
-		if ($client -ne $null) { $client.Close() | Out-Null; }
+		Close-CoreServiceClient $client;
 	}
 }
 
@@ -299,7 +299,7 @@ function New-Group
 	
 	End
 	{
-		if ($client -ne $null) { $client.Close() | Out-Null; }
+		Close-CoreServiceClient $client;
 	}	
 }
 
@@ -418,7 +418,7 @@ function New-User
 	
 	End
 	{
-		if ($client -ne $null) { $client.Close() | Out-Null; }
+		Close-CoreServiceClient $client;
 	}	
 }
 

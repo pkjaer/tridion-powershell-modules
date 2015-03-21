@@ -1,4 +1,4 @@
-#Requires -version 2.0
+#Requires -version 3.0
 
 <#
 **************************************************
@@ -71,7 +71,7 @@ Function Get-CoreServiceClient
     Gets a session-aware Core Service client. The Core Service version, binding, and host machine can be modified using Set-TridionCoreServiceSettings.
 
     .Notes
-    Make sure you call the Close method when you are done with the client (i.e. in a finally block).
+    Make sure you call Close-TridionCoreServiceClient when you are done with the client (i.e. in a finally block).
 
     .Inputs
     None.
@@ -93,7 +93,7 @@ Function Get-CoreServiceClient
         }
         finally
         {
-            if ($client -ne $null) { $client.Close() | Out-Null; }
+			Close-TridionCoreServiceClient $client;
         }
     }
 
@@ -119,7 +119,11 @@ Function Get-CoreServiceClient
         # Load the Core Service Client
         $endpoint = New-Object System.ServiceModel.EndpointAddress -ArgumentList $serviceInfo.EndpointUrl
         $binding = Get-CoreServiceBinding;
-        [Reflection.Assembly]::LoadFrom($serviceInfo.AssemblyPath) | Out-Null;            
+		
+		#Load the assembly without locking the file
+		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
+		if (!$assemblyBytes) { throw "Unable to load the assembly at: " + $serviceInfo.AssemblyPath; }
+        [Reflection.Assembly]::Load($assemblyBytes) | Out-Null;            
     }
     
     Process
@@ -144,6 +148,62 @@ Function Get-CoreServiceClient
     }
 }
 
+Function Close-CoreServiceClient
+{
+    <#
+    .Synopsis
+    Closes the Core Service connection.
+
+    .Description
+    This will close the connection, even if it is in a faulted state due to previous exceptions.
+
+    .Notes
+    You should call this method in your 'finally' clause or 'End' step.
+
+    .Inputs
+    The Core Service client to close.
+
+    .Outputs
+    None.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    $client = Get-TridionCoreServiceClient;
+	try
+	{
+		$client.GetCurrentUser();
+	}
+	finally
+	{
+		Close-TridionCoreServiceClient $client;
+	}
+
+    #>
+    [CmdletBinding()]
+    Param(
+		# The client to close. It is allowed to be null.
+        [Parameter(ValueFromPipeline=$true)]
+		$client
+	)
+
+	Process
+	{
+		if ($client -ne $null) 
+		{
+			if ($client.State -eq 'Faulted')
+			{
+				$client.Abort() | Out-Null;
+			}
+			else
+			{
+				$client.Close() | Out-Null; 
+			}
+		}
+	}
+}
 
 <#
 **************************************************
@@ -151,3 +211,4 @@ Function Get-CoreServiceClient
 **************************************************
 #>
 Export-ModuleMember Get-CoreServiceClient
+Export-ModuleMember Close-CoreServiceClient
