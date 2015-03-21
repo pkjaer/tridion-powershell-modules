@@ -35,7 +35,7 @@ function EnsureDirectoriesExist
 	}
 
 	# Create the module folders
-	$baseDir = ($destination + '\Tridion-CoreService');
+	$baseDir = (Join-Path -Path $destination -ChildPath 'Tridion-CoreService');
 	
 	foreach($dir in $directories)
 	{
