@@ -1,6 +1,6 @@
 This project contains a **Windows PowerShell module** that allow you to easily interact with the **SDL Tridion** content management system and perform various administrative tasks.
 
-Currently supported Tridion versions: 2011 SP1, 2013 GA, and 2013 SP1.
+Currently supported Tridion versions: 2011 SP1, 2013 GA, 2013 SP1 and Web 8.
 
 
 ### Installation
