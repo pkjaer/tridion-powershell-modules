@@ -161,7 +161,7 @@ Function Set-CoreServiceSettings
 		[ValidateNotNullOrEmpty()]
         [string]$HostName,
 		
-		[ValidateSet('', '2011-SP1', '2013', '2013-SP1')]
+		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1')]
 		[string]$Version,
 		
 		[Parameter()]
@@ -221,6 +221,12 @@ Function Set-CoreServiceSettings
 				{ 
 					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.2013sp1.dll';
 					$relativeUrl = if ($netTcp) { "/CoreService/2013/netTcp" } else { "/webservices/CoreService2013.svc/wsHttp" };
+					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
+				}
+				"Web-8.1"
+				{
+					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_1.dll';
+					$relativeUrl = if ($netTcp) { "/CoreService/201501/netTcp" } else { "/webservices/CoreService201501.svc/wsHttp" };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
 			}

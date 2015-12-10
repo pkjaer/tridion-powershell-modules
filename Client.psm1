@@ -63,6 +63,7 @@ Function Get-LoadedCoreServiceClientVersion
                         "Tridion.ContentManager.CoreService.Client, Version=7.0.0.2013, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2013"
 						"Tridion.ContentManager.CoreService.Client, Version=7.1.0.1245, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2013-SP1-PRE"
                         "Tridion.ContentManager.CoreService.Client, Version=7.1.0.1290, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2013-SP1"
+						"Tridion.ContentManager.CoreService.Client, Version=8.1.0.1287, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="Web-8.1"
                         }
 
         foreach ($assembly in [appdomain]::CurrentDomain.GetAssemblies()) 
