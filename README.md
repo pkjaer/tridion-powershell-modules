@@ -15,7 +15,7 @@ The quickest way to install is to use the provided script:
 This will download the latest release, install it, and load the modules.
 Afterwards, you may wish to run the verification script ('Verify.ps1') located in the _Installation_ folder -- or simply start using the available commands.
 
-Should the above steps fail to work for you, please [let us know](/pkjaer/tridion-powershell-modules/issues/new)! As an alternative to the installation script, follow the step-by-step instructions on the [Manual Installation](/pkjaer/tridion-powershell-modules/wiki/Manual-Installation) page.
+Should the above steps fail to work for you, please [let us know](https://github.com/pkjaer/tridion-powershell-modules/issues/new)! As an alternative to the installation script, follow the step-by-step instructions on the [Manual Installation](https://github.com/pkjaer/tridion-powershell-modules/wiki/Manual-Installation) page.
 
 ### Help
 
@@ -25,4 +25,4 @@ You can get the list of all of the commands by typing this in PowerShell:
 Each of the commands also has help information available (including examples), which you can read by calling `Get-Help nameOfCommand` (e.g. `Get-Help Get-TridionUser`).
 
 
-If you have any issues or questions, feel free to add an entry under [Issues](/pkjaer/tridion-powershell-modules/issues).
+If you have any issues or questions, feel free to add an entry under [Issues](https://github.com/pkjaer/tridion-powershell-modules/issues).
