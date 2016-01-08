@@ -9,17 +9,11 @@ $baseDownloadUrl = 'https://raw.githubusercontent.com/pkjaer/tridion-powershell-
 # List of all the files to install
 $directories = @("Clients", "Installation");
 $files = @(
-	'Clients/Tridion.ContentManager.CoreService.Client.2011sp1.dll', 
-	'Clients/Tridion.ContentManager.CoreService.Client.2013.dll', 
-	'Clients/Tridion.ContentManager.CoreService.Client.2013sp1.dll',
-	'Clients/Tridion.ContentManager.CoreService.Client.Web_8_1.dll',
 	'Installation/Install.ps1',
 	'Installation/Verify.ps1',
-	'Client.psm1', 
-	'Items.psm1', 
+	'Plugins.psm1', 
 	'Settings.psm1', 
-	'Tridion-CoreService.psd1', 
-	'Trustees.psm1'
+	'Tridion-Alchemy.psd1'
 );
 
 	
@@ -36,7 +30,7 @@ function EnsureDirectoriesExist
 	}
 
 	# Create the module folders
-	$baseDir = (Join-Path -Path $destination -ChildPath 'Tridion-CoreService');
+	$baseDir = (Join-Path -Path $destination -ChildPath 'Tridion-Alchemy');
 	
 	foreach($dir in $directories)
 	{
@@ -54,13 +48,13 @@ function EnsureDirectoriesExist
 function Completed
 {
 	# Load the new module and report success
-	if (Get-Module Tridion-CoreService)
+	if (Get-Module Tridion-Alchemy)
 	{
-		Remove-Module -Force Tridion-CoreService | Out-Null;
+		Remove-Module -Force Tridion-Alchemy | Out-Null;
 	}
-	Import-Module Tridion-CoreService | Out-Null;
-	$version = (Get-Module Tridion-CoreService).Version.ToString();
-	Write-Host "The Tridion-CoreService PowerShell module (version $version) has been installed and loaded." -Foreground Green;
+	Import-Module Tridion-Alchemy | Out-Null;
+	$version = (Get-Module Tridion-Alchemy).Version.ToString();
+	Write-Host "The Tridion-Alchemy PowerShell module (version $version) has been installed and loaded." -Foreground Green;
 }
 
 function ReplaceSlashes([string]$file)
@@ -68,25 +62,24 @@ function ReplaceSlashes([string]$file)
 	return $file.Replace('/', '\');
 }
 
-function DownloadAndInstall 
+function InstallLocalVersion
 {
 	$baseDir = EnsureDirectoriesExist;
-	$max = $files.Count;
-	$idx = 0;
+	$sourceDir = (Split-Path -Parent $PSScriptRoot)
 	
-	# Download all of the files
-    Write-Host "Downloading Tridion-CoreService PowerShell module ($max files)...";
-    $net = (New-Object Net.WebClient);
-    $net.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;
-
-	foreach ($file in $files)
+	foreach($file in $files)
 	{
+		$sourceFile = ReplaceSlashes((Join-Path $sourceDir $file));
 		$destination = ReplaceSlashes((Join-Path $baseDir $file));
-		$net.DownloadFile("$baseDownloadUrl/$file", $destination);
-		Write-Progress -Activity "Downloading module files" -Status "$file" -PercentComplete ((++$idx / $max) * 100);
+		
+		if (!(Test-Path $sourceFile))
+		{
+			throw "Required module file not found: $sourceFile";
+		}
+		Copy-Item -Path $sourceFile -Destination $destination;
 	}
 
 	Completed;
 }
 
-DownloadAndInstall;
+InstallLocalVersion;
