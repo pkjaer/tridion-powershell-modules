@@ -99,7 +99,7 @@ Function Get-PluginNameFromFile
 		
         $zip = Get-Item($File);
 		$a = [IO.Compression.ZipFile]::OpenRead($zip.FullName);
-        $entries = $a.Entries.Where{$_.FullName -eq "a4t.xml"};
+        $entries = $a.Entries | where {$_.FullName -eq "a4t.xml"};
 		
 		if ($entries.Count -lt 1)
 		{
