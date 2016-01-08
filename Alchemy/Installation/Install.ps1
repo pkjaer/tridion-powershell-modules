@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop';
 $baseDownloadUrl = 'https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/alchemy/Alchemy';
 
 # List of all the files to install
-$directories = @("Clients", "Installation");
+$directories = @("Installation");
 $files = @(
 	'Installation/Install.ps1',
 	'Installation/Verify.ps1',
