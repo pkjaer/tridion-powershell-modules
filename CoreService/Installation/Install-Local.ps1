@@ -9,6 +9,7 @@ $files = @(
 	'Clients/Tridion.ContentManager.CoreService.Client.2011sp1.dll', 
 	'Clients/Tridion.ContentManager.CoreService.Client.2013.dll', 
 	'Clients/Tridion.ContentManager.CoreService.Client.2013sp1.dll',
+	'Clients/Tridion.ContentManager.CoreService.Client.Web_8_1.dll',
 	'Installation/Install.ps1',
 	'Installation/Verify.ps1',
 	'Client.psm1', 
@@ -24,7 +25,7 @@ function EnsureDirectoriesExist
 	# Locate the user's module directory
     $modulePaths = @($env:PSModulePath -split ';');
 	$expectedPath = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath WindowsPowerShell\Modules;
-	$destination = $modulePaths | Where-Object { $_ -eq $expectedPath };
+	$destination = $modulePaths | Where-Object { $_ -eq $expectedPath } | Select -First 1;
 	
 	if (-not $destination) 
 	{
@@ -32,7 +33,7 @@ function EnsureDirectoriesExist
 	}
 
 	# Create the module folders
-	$baseDir = ($destination + '\Tridion-CoreService');
+	$baseDir = (Join-Path -Path $destination -ChildPath 'Tridion-CoreService');
 	
 	foreach($dir in $directories)
 	{
