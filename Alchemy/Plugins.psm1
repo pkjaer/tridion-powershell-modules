@@ -242,12 +242,20 @@ Function Update-Plugin
 	{
 		$verboseRequested = ($PSBoundParameters['Verbose'] -eq $true);
 		
-		Write-Progress -Activity "Updating plugin" -Status "Uninstalling $File" -PercentComplete 10;
-		Uninstall-Plugin -File $File -Verbose:$verboseRequested -Force:$Force
-		Write-Progress -Activity "Updating plugin" -Status "Uninstalling $File" -PercentComplete 50;
-		Install-Plugin -File $File -Verbose:$verboseRequested -Force:$Force
-		Write-Progress -Activity "Updating plugin" -Status "Done updating $File" -PercentComplete 10 -Completed;
-	}
+		try
+		{
+			Write-Progress -Activity "Updating plugin" -Status "Uninstalling $File" -PercentComplete 10;
+			Uninstall-Plugin -File $File -Verbose:$verboseRequested -Force:$Force
+			Write-Progress -Activity "Updating plugin" -Status "Uninstalling $File" -PercentComplete 50;
+			Install-Plugin -File $File -Verbose:$verboseRequested -Force:$Force
+			Write-Progress -Activity "Updating plugin" -Status "Done updating $File" -PercentComplete 10 -Completed;
+		}
+		catch
+		{
+			Write-Progress -Activity "Updating plugin" -Status "Failed" -Completed;
+			Write-Error $_.Error;
+		}
+}
 }
 
 Function Start-PluginMonitor
