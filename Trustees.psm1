@@ -255,7 +255,7 @@ function New-Group
 			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
 			$readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::None;
 			
-			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('string containerId') -gt 0)
+			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('ReadOptions readOptions') -gt 0)
 			{
 				$group = $client.GetDefaultData("Group", $null, $readOptions);
 			}
@@ -387,7 +387,7 @@ function New-User
 			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
 			$readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::None;
 			
-			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('string containerId') -gt 0)
+			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('ReadOptions readOptions') -gt 0)
 			{
 				$user = $client.GetDefaultData("User", $null, $readOptions);
 			}
