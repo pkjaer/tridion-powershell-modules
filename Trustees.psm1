@@ -371,6 +371,7 @@ function New-User
     .Inputs
     [string] userName: the user name including the domain.
     [string] description: the friendly name of the user, typically the full name. Defaults to the $UserName parameter.
+	[string] MemberOf: the groups you want the user to be in.
     [bool] isAdmin: set to true if you wish to give the new user full administrator rights within the Content Manager. Defaults to $false.
 
     .Outputs
@@ -383,6 +384,14 @@ function New-User
     .Example
     New-TridionUser -UserName "GLOBAL\user01"
     Adds "GLOBAL\user01" to the Content Manager with a description matching the user name and no administrator rights.
+	
+	.Example
+    New-TridionUser -UserName "GLOBAL\user01" -MemberOf SuperUsers,WebMasters
+    Adds "GLOBAL\user01" to the Content Manager with a description matching the user name, to groups SuperUsers and WebMasters, and with no administrator rights.
+	
+	.Example
+    New-TridionUser -UserName "GLOBAL\user01" -MemberOf "tcm:0-188-65552"
+    Adds "GLOBAL\user01" to the Content Manager with a description matching the user name, to group with id tcm:0-188-65552, and with no administrator rights.
     
     .Example
     New-TridionUser -UserName "GLOBAL\user01" -Description "User 01"
@@ -408,6 +417,10 @@ function New-User
             # The description (or 'friendly name') of the user. This is displayed throughout the UI.
             [Parameter()]
             [string]$Description,
+			
+			# A list of URIs for the existing Groups that the new User should be a part of. Supports also Titles of the groups.
+            [Parameter()]
+            [string[]]$MemberOf,
 			
             # If set, the new user will have system administrator privileges. Use with caution.
             [Parameter()]
@@ -446,7 +459,27 @@ function New-User
 			
 			$user.Title = $UserName;
 			$user.Description = $userDescription;
-
+					
+			$TridionGroups = Get-Groups
+			foreach($groupUri in $MemberOf)
+			{
+				if (-not $groupUri.contains('tcm:')) {
+					# it's not a uri, it's a name. let's convert it to it's tcm.
+					$group = $TridionGroups | ?{$_.title -eq $groupUri} | select -first 1
+					if (-not $group) {
+						Write-Error "Could not find a group named $groupUri."
+						continue
+					}
+					$groupUri = $group.id
+				}
+				
+				$groupData = New-Object Tridion.ContentManager.CoreService.Client.GroupMembershipData;
+				$groupLink = New-Object Tridion.ContentManager.CoreService.Client.LinkToGroupData;
+				$groupLink.IdRef = $groupUri;
+				$groupData.Group = $groupLink;
+				$user.GroupMemberships += $groupData;
+			}
+			
 			if ($MakeAdministrator)
 			{
 				$user.Privileges = 1;
