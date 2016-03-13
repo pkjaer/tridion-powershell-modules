@@ -163,6 +163,54 @@ Function Get-Users
 	}
 }
 
+Function Get-Groups
+{
+    <#
+    .Synopsis
+    Gets a list of groups within Tridion Content Manager.
+
+    .Description
+    Gets a list of groups within Tridion Content Manager. 
+
+    .Inputs
+    None.
+
+    .Outputs
+    Returns a list of objects of type [Tridion.ContentManager.CoreService.Client.TrusteeData].
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+	
+    .Example
+    Get-TridionGroups
+    Gets all groups.
+    
+    #>
+    [CmdletBinding()]
+	PARAM()
+	
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
+    Process
+    {
+        if ($client -ne $null)
+        {
+			Write-Verbose "Getting a list of Tridion groups.";
+			$filter = New-Object Tridion.ContentManager.CoreService.Client.GroupsFilterData;
+			$client.GetSystemWideList($filter);
+        }
+    }
+	
+	End
+	{
+		Close-CoreServiceClient $client;
+	}
+}
+
 
 function New-Group
 {
@@ -429,5 +477,6 @@ function New-User
 #>
 Export-ModuleMember Get-User
 Export-ModuleMember Get-Users
+Export-ModuleMember Get-Groups
 Export-ModuleMember New-Group
 Export-ModuleMember New-User
