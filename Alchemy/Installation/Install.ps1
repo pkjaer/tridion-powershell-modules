@@ -4,7 +4,7 @@
 $ErrorActionPreference = 'Stop';
 
 # Base URL to download the latest version from the internet
-$baseDownloadUrl = 'https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/alchemy/Alchemy';
+$baseDownloadUrl = 'https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/master/Alchemy';
 
 # List of all the files to install
 $directories = @("Installation");
