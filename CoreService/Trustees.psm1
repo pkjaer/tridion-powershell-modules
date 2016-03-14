@@ -163,6 +163,54 @@ Function Get-Users
 	}
 }
 
+Function Get-Groups
+{
+    <#
+    .Synopsis
+    Gets a list of groups within Tridion Content Manager.
+
+    .Description
+    Gets a list of groups within Tridion Content Manager. 
+
+    .Inputs
+    None.
+
+    .Outputs
+    Returns a list of objects of type [Tridion.ContentManager.CoreService.Client.TrusteeData].
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+	
+    .Example
+    Get-TridionGroups
+    Gets all groups.
+    
+    #>
+    [CmdletBinding()]
+	PARAM()
+	
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
+    Process
+    {
+        if ($client -ne $null)
+        {
+			Write-Verbose "Getting a list of Tridion groups.";
+			$filter = New-Object Tridion.ContentManager.CoreService.Client.GroupsFilterData;
+			$client.GetSystemWideList($filter);
+        }
+    }
+	
+	End
+	{
+		Close-CoreServiceClient $client;
+	}
+}
+
 
 function New-Group
 {
@@ -255,7 +303,7 @@ function New-Group
 			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
 			$readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::None;
 			
-			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('string containerId') -gt 0)
+			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('ReadOptions readOptions') -gt 0)
 			{
 				$group = $client.GetDefaultData("Group", $null, $readOptions);
 			}
@@ -323,6 +371,7 @@ function New-User
     .Inputs
     [string] userName: the user name including the domain.
     [string] description: the friendly name of the user, typically the full name. Defaults to the $UserName parameter.
+	[string] MemberOf: the groups you want the user to be in.
     [bool] isAdmin: set to true if you wish to give the new user full administrator rights within the Content Manager. Defaults to $false.
 
     .Outputs
@@ -335,6 +384,14 @@ function New-User
     .Example
     New-TridionUser -UserName "GLOBAL\user01"
     Adds "GLOBAL\user01" to the Content Manager with a description matching the user name and no administrator rights.
+	
+	.Example
+    New-TridionUser -UserName "GLOBAL\user01" -MemberOf SuperUsers,WebMasters
+    Adds "GLOBAL\user01" to the Content Manager with a description matching the user name, to groups SuperUsers and WebMasters, and with no administrator rights.
+	
+	.Example
+    New-TridionUser -UserName "GLOBAL\user01" -MemberOf "tcm:0-188-65552"
+    Adds "GLOBAL\user01" to the Content Manager with a description matching the user name, to group with id tcm:0-188-65552, and with no administrator rights.
     
     .Example
     New-TridionUser -UserName "GLOBAL\user01" -Description "User 01"
@@ -360,6 +417,10 @@ function New-User
             # The description (or 'friendly name') of the user. This is displayed throughout the UI.
             [Parameter()]
             [string]$Description,
+			
+			# A list of URIs for the existing Groups that the new User should be a part of. Supports also Titles of the groups.
+            [Parameter()]
+            [string[]]$MemberOf,
 			
             # If set, the new user will have system administrator privileges. Use with caution.
             [Parameter()]
@@ -387,7 +448,7 @@ function New-User
 			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
 			$readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::None;
 			
-			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('string containerId') -gt 0)
+			if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('ReadOptions readOptions') -gt 0)
 			{
 				$user = $client.GetDefaultData("User", $null, $readOptions);
 			}
@@ -398,7 +459,27 @@ function New-User
 			
 			$user.Title = $UserName;
 			$user.Description = $userDescription;
-
+					
+			$TridionGroups = Get-Groups
+			foreach($groupUri in $MemberOf)
+			{
+				if (-not $groupUri.contains('tcm:')) {
+					# it's not a uri, it's a name. let's convert it to it's tcm.
+					$group = $TridionGroups | ?{$_.title -eq $groupUri} | select -first 1
+					if (-not $group) {
+						Write-Error "Could not find a group named $groupUri."
+						continue
+					}
+					$groupUri = $group.id
+				}
+				
+				$groupData = New-Object Tridion.ContentManager.CoreService.Client.GroupMembershipData;
+				$groupLink = New-Object Tridion.ContentManager.CoreService.Client.LinkToGroupData;
+				$groupLink.IdRef = $groupUri;
+				$groupData.Group = $groupLink;
+				$user.GroupMemberships += $groupData;
+			}
+			
 			if ($MakeAdministrator)
 			{
 				$user.Privileges = 1;
@@ -429,5 +510,6 @@ function New-User
 #>
 Export-ModuleMember Get-User
 Export-ModuleMember Get-Users
+Export-ModuleMember Get-Groups
 Export-ModuleMember New-Group
 Export-ModuleMember New-User
