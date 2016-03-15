@@ -29,6 +29,7 @@ Function Get-DefaultSettings
 		"AssemblyPath" = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.2011sp1.dll';
 		"ClassName" = "Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient";
 		"EndpointUrl" = "http://localhost/webservices/CoreService2011.svc/wsHttp";
+		"ConnectionSendTimeout" = "00:01:00";
 		"HostName" = "localhost";
 		"UserName" = ([Environment]::UserDomainName + "\" + [Environment]::UserName);
 		"Version" = "2011-SP1";
@@ -172,6 +173,9 @@ Function Set-CoreServiceSettings
 		[string]$ConnectionType,
 		
 		[Parameter()]
+		[string]$ConnectionSendTimeout,
+		
+		[Parameter()]
 		[switch]$Persist
     )
 
@@ -181,9 +185,11 @@ Function Set-CoreServiceSettings
 		$userNameSpecified = (![string]::IsNullOrEmpty($UserName));
 		$versionSpecified = (![string]::IsNullOrEmpty($Version));
 		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
+		$connectionSendTimeoutSpecified = (![string]::IsNullOrEmpty($ConnectionSendTimeout));
 		
 		$settings = Get-Settings;
 		if ($connectionTypeSpecified) { $settings.ConnectionType = $ConnectionType; }
+		if ($connectionSendTimeoutSpecified) { $settings.ConnectionSendTimeout = $ConnectionSendTimeout; }
 		if ($hostNameSpecified) { $settings.HostName = $HostName; }
 		if ($userNameSpecified) { $settings.UserName = $UserName; }
 		if ($versionSpecified) { $settings.Version = $Version; }
