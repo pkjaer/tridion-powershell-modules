@@ -430,6 +430,8 @@ function New-User
 	Begin
 	{
         $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$tridionGroups = $null;
+		$groupsLoaded = $false;
 	}
 
     Process
@@ -459,25 +461,39 @@ function New-User
 			
 			$user.Title = $UserName;
 			$user.Description = $userDescription;
-					
-			$TridionGroups = Get-Groups
-			foreach($groupUri in $MemberOf)
+			
+			if ($MemberOf)
 			{
-				if (-not $groupUri.contains('tcm:')) {
-					# it's not a uri, it's a name. let's convert it to it's tcm.
-					$group = $TridionGroups | ?{$_.title -eq $groupUri} | select -first 1
-					if (-not $group) {
-						Write-Error "Could not find a group named $groupUri."
-						continue
+				foreach($groupUri in $MemberOf)
+				{
+					if ($groupUri)
+					{
+						if (-not $groupUri.StartsWith('tcm:'))
+						{
+							# It's not a URI, it's a name. Look up the group URI by its title.
+							if (-not $groupsLoaded)
+							{
+								$tridionGroups = Get-Groups
+								$groupsLoaded = $true;
+							}
+							
+							$group = $tridionGroups | ?{$_.Title -eq $groupUri} | Select -First 1
+							if (-not $group) 
+							{
+								Write-Error "Could not find a group named $groupUri."
+								continue
+							}
+							
+							$groupUri = $group.id
+						}
+						
+						$groupData = New-Object Tridion.ContentManager.CoreService.Client.GroupMembershipData;
+						$groupLink = New-Object Tridion.ContentManager.CoreService.Client.LinkToGroupData;
+						$groupLink.IdRef = $groupUri;
+						$groupData.Group = $groupLink;
+						$user.GroupMemberships += $groupData;
 					}
-					$groupUri = $group.id
 				}
-				
-				$groupData = New-Object Tridion.ContentManager.CoreService.Client.GroupMembershipData;
-				$groupLink = New-Object Tridion.ContentManager.CoreService.Client.LinkToGroupData;
-				$groupLink.IdRef = $groupUri;
-				$groupData.Group = $groupLink;
-				$user.GroupMemberships += $groupData;
 			}
 			
 			if ($MakeAdministrator)

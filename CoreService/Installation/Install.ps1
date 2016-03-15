@@ -4,7 +4,7 @@
 $ErrorActionPreference = 'Stop';
 
 # Base URL to download the latest version from the internet
-$baseDownloadUrl = 'https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/master';
+$baseDownloadUrl = 'https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/master/CoreService';
 
 # List of all the files to install
 $directories = @("Clients", "Installation");
@@ -15,6 +15,7 @@ $files = @(
 	'Clients/Tridion.ContentManager.CoreService.Client.Web_8_1.dll',
 	'Installation/Install.ps1',
 	'Installation/Verify.ps1',
+	'AppData.psm1', 
 	'Client.psm1', 
 	'Items.psm1', 
 	'Settings.psm1', 
@@ -60,7 +61,7 @@ function Completed
 	}
 	Import-Module Tridion-CoreService | Out-Null;
 	$version = (Get-Module Tridion-CoreService).Version.ToString();
-	Write-Host "Tridion PowerShell Modules version $version has been installed and loaded." -Foreground Green;
+	Write-Host "The Tridion-CoreService PowerShell module (version $version) has been installed and loaded." -Foreground Green;
 }
 
 function ReplaceSlashes([string]$file)
@@ -75,7 +76,7 @@ function DownloadAndInstall
 	$idx = 0;
 	
 	# Download all of the files
-    Write-Host "Downloading Tridion PowerShell Modules ($max files)...";
+    Write-Host "Downloading Tridion-CoreService PowerShell module ($max files)...";
     $net = (New-Object Net.WebClient);
     $net.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;
 
