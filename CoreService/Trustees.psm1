@@ -90,6 +90,53 @@ function Get-User
 	}
 }
 
+function Get-Group
+{
+    <#
+    .Synopsis
+    Gets information about the a specific Tridion group.
+
+    .Description
+    Gets a group object containing information about the specified group within Tridion.
+
+    .Inputs
+    None.
+
+    .Outputs
+    Returns an object of type [Tridion.ContentManager.CoreService.Client.TrusteeData].
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    Get-TridionGroup "WebMaster"
+    Returns information about the group 'WebMaster'.
+	
+	.Example
+    Get-TridionUser "tcm:2-12-65552"
+    Returns information about group with the id 'tcm:2-12-65552'.
+    
+    #>
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Group
+    )
+
+	Write-Verbose "Loading Tridion group...";
+	$GroupObj = Get-Groups | ?{($group -eq ($_.Id)) -or ($group -eq $_.Title)} | Select -First 1
+	if (-not $GroupObj)
+	{
+		Write-Error "The group '$Group' does not exist.";
+		return $null;
+	}
+	
+	return $GroupObj
+}
+
 
 Function Get-Users
 {
@@ -210,7 +257,6 @@ Function Get-Groups
 		Close-CoreServiceClient $client;
 	}
 }
-
 
 function New-Group
 {
@@ -526,6 +572,7 @@ function New-User
 #>
 Export-ModuleMember Get-User
 Export-ModuleMember Get-Users
+Export-ModuleMember Get-Group
 Export-ModuleMember Get-Groups
 Export-ModuleMember New-Group
 Export-ModuleMember New-User
