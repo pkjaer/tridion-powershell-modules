@@ -156,6 +156,57 @@ Function Get-Item
 	}
 }
 
+function Test-Object
+{
+    <#
+    .Synopsis
+    Checks if the item with the given ID exists.
+	
+	.Notes
+    Example of properties available: Id, Title, etc.
+    
+    For a full list, consult the Content Manager Core Service API Reference Guide documentation 
+    (Tridion.ContentManager.Data.CommunicationManagement.IdentifiableObject object)
+	
+    .Inputs
+    None.
+
+    .Outputs
+    Returns a boolean type.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    Test-Object 'tcm:1-155-5110'
+    Returns if tcm tcm:1-155-5110 exists.
+
+    .Example
+    Test-Object '/webdav/02 Publication'
+    Returns if webdav path '/webdav/02 Publication' exists.
+    
+    #>
+    [CmdletBinding()]
+    Param
+    (
+		# The TCM URI of the user to load. If omitted, data for the current user is loaded instead.
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Id
+    )
+
+	try
+	{
+		Get-Item -id $Id | Out-Null
+		return $True
+	}
+	catch
+	{
+		return $False;
+	}
+}
+
 <#
 **************************************************
 * Export statements
@@ -163,3 +214,4 @@ Function Get-Item
 #>
 Export-ModuleMember Get-Item
 Export-ModuleMember Get-Publications
+Export-ModuleMember Test-Object
