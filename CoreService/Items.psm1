@@ -162,12 +162,6 @@ function Test-Object
     .Synopsis
     Checks if the item with the given ID exists.
 	
-	.Notes
-    Example of properties available: Id, Title, etc.
-    
-    For a full list, consult the Content Manager Core Service API Reference Guide documentation 
-    (Tridion.ContentManager.Data.CommunicationManagement.IdentifiableObject object)
-	
     .Inputs
     None.
 
@@ -180,7 +174,7 @@ function Test-Object
 
     .Example
     Test-Object 'tcm:1-155-5110'
-    Returns if tcm tcm:1-155-5110 exists.
+    Returns if id 'tcm:1-155-5110' exists.
 
     .Example
     Test-Object '/webdav/02 Publication'
@@ -195,15 +189,20 @@ function Test-Object
 		[ValidateNotNullOrEmpty()]
         [string]$Id
     )
-
-	try
+	
+	Begin
 	{
-		Get-Item -id $Id | Out-Null
-		return $True
+		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
-	catch
+	
+    Process
+    {
+        return $client.IsExistingObject($Id);
+    }
+	
+	End
 	{
-		return $False;
+		Close-CoreServiceClient $client;
 	}
 }
 
