@@ -6,9 +6,23 @@
 **************************************************
 #>
 
-Function Add-Property($object, $name, $value)
+Function Add-Property($Object, $Name, $Value)
 {
-	Add-Member -InputObject $object -membertype NoteProperty -name $key -value $value;
+	Add-Member -InputObject $Object -MemberType NoteProperty -Name $Name -Value $Value;
+}
+
+Function Has-Property($Object, $Name)
+{
+	return Get-Member -InputObject $Object -Name $Name -MemberType NoteProperty;
+}
+
+Function Add-SettingIfMissing($Object, $Name, $Value)
+{
+	if (!(Has-Property -Object $Object -Name $Name))
+	{
+		Add-Property $Object $Name $Value;
+		Write-Host -ForegroundColor Green "There is a new setting available: $Name. The default value of '$Value' has been applied."
+	}
 }
 
 Function New-ObjectWithProperties([Hashtable]$properties)
@@ -16,7 +30,7 @@ Function New-ObjectWithProperties([Hashtable]$properties)
 	$result = New-Object -TypeName System.Object;
 	foreach($key in $properties.Keys)
 	{
-		Add-Property $result $key $properties[$key];
+		Add-Property -Object $result -Name $key -Value $properties[$key];
 	}
 	return $result;
 }
@@ -68,6 +82,7 @@ Function Convert-OldSettings($settings)
 	if ($upgradeNeeded)
 	{
 		Write-Verbose "Upgrading your settings..."
+		Add-SettingIfMissing -Object $settings -Name 'ConnectionSendTimeout' -Value '00:01:00';
 		$settings.ModuleVersion = $moduleVersion;
 		Save-Settings $settings;
 	}
