@@ -49,15 +49,18 @@ function Get-User
     Param
     (
 		# The TCM URI of the user to load. If omitted, data for the current user is loaded instead.
-        [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
+        [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
+		[ValidateNotNullOrEmpty()]
         [string]$Id,
 
 		# The name (including domain) of the user to load.
-        [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
+		[ValidateNotNullOrEmpty()]
         [string]$Title,
 		
 		# The description of the user to load.
-        [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ByDescription', Position=0)]
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByDescription', Position=0)]
+		[ValidateNotNullOrEmpty()]
         [string]$Description
     )
 
@@ -163,11 +166,11 @@ function Get-Group
     [CmdletBinding(DefaultParameterSetName='ById')]
     Param
     (
-        [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Id,
 
-        [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Title
     )

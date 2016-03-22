@@ -160,12 +160,12 @@ function Get-PublicationTarget
     Param
     (
 		# The TCM URI of the Publication Target to load.
-        [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Id,
 
 		# The Title of the Publication Target to load. This is slower than specifying the ID.
-        [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Title
     )
