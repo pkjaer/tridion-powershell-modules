@@ -4,7 +4,7 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 
 ### Installation
-[Click here to view the installation instructions](../)], which covers installation of all of the modules.
+[Click here to view the installation instructions](https://github.com/pkjaer/tridion-powershell-modules/), which covers installation of all of the modules.
 
 
 ### Release notes
