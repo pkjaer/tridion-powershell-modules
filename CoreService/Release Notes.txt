@@ -9,6 +9,7 @@ v2.2.0.0
 - Added support for getting a list of Publication Targets (Get-TridionPublicationTargets)
 - Added support for reading Publication Targets and Groups (Get-TridionPublicationTarget, Get-TridionGroup). 
   Both methods support loading the items either by TCM URI or the Title of the item.
+- Added support for reading a user by Title or Description.
 - Added Test-TridionItem, which returns a boolean indicating if the item exists in the Content Manager.
 - Added a new configuration setting called 'ConnectionSendTimeout', which controls the amount of time to wait for a connection before timing out.
 

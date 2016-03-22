@@ -114,7 +114,7 @@ function Get-PublicationTargets
     {
         if ($client -ne $null)
         {
-			Write-Verbose "Loading list of Publications...";
+			Write-Verbose "Loading list of Publication Targets...";
 			$filter = New-Object Tridion.ContentManager.CoreService.Client.PublicationTargetsFilterData;
 			return $client.GetSystemWideList($filter);
         }
@@ -130,13 +130,15 @@ function Get-PublicationTarget
 {
     <#
     .Synopsis
-    Gets information about a specific Tridion publication target.
+    Gets information about a specific Tridion Publication Target.
 
     .Description
-    Gets a publication target object containing information about the specified publication target within Tridion.
+    Gets an object containing information about the specified Publication Target within Tridion.
 
     .Inputs
-    None.
+    [string] Id: The TCM URI of the Publication Target to load.
+	OR
+	[string] Title: The Title of the Publication Target to load.
 
     .Outputs
     Returns an object of type [Tridion.ContentManager.CoreService.Client.PublicationTargetData].
@@ -144,40 +146,65 @@ function Get-PublicationTarget
     .Link
     Get the latest version of this script from the following URL:
     https://github.com/pkjaer/tridion-powershell-modules
-
-    .Example
-    Get-TridionPublicationTarget "Staging"
-    Returns information about the publication target named 'Staging'.
 	
 	.Example
-    Get-TridionPublicationTarget "tcm:2-12-65552"
-    Returns information about publication target with the id 'tcm:2-12-65552'.
+    Get-TridionPublicationTarget "tcm:0-1-65537"
+    Returns the Publication Target with ID 'tcm:0-1-65537'.
+
+    .Example
+    Get-TridionPublicationTarget -Title "Staging"
+    Returns the Publication Target named 'Staging'.
     
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='ById')]
     Param
     (
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
+		# The TCM URI of the Publication Target to load.
+        [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
-        [string]$PublicationTarget
+        [string]$Id,
+
+		# The Title of the Publication Target to load. This is slower than specifying the ID.
+        [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Title
     )
 
-	Write-Verbose "Loading Tridion publication target '$PublicationTarget'...";
-	if ($PublicationTarget.StartsWith('tcm'))
+	Process
 	{
-		$PublicationTargetObj = Get-Item $PublicationTarget
-	}
-	else
-	{
-		$PublicationTargetObj = Get-PublicationTargets | ?{$PublicationTarget -eq $_.Title} | Select -First 1
-		if (-not $PublicationTargetObj)
+		switch($PsCmdlet.ParameterSetName)
 		{
-			Write-Error "The Publication Target '$PublicationTarget' does not exist."
-			return $null;
+			'ById' 
+			{
+				if (!$Id.EndsWith('-65537'))
+				{
+					Write-Error "'$Id' is not a valid Publication Target URI.";
+					return;
+				}
+
+				Write-Verbose "Loading Publication Target with ID '$Id'..."
+				$result = Get-Item $Id -ErrorAction SilentlyContinue;
+				if (-not $result)
+				{
+					Write-Error "Publication Target '$Id' does not exist.";
+					return $null;
+				}
+				return $result;
+			}
+			
+			'ByTitle'
+			{
+				Write-Verbose "Loading Publication Target with title '$Title'..."
+				$result = Get-PublicationTargets | ?{$_.Title -eq $Title} | Select -First 1;
+				if (-not $result)
+				{
+					Write-Error "There is no Publication Target named '$Title'.";
+					return $null;
+				}
+				return $result;
+			}
 		}
 	}
-	
-	return $PublicationTargetObj
 }
 
 Function Get-Item
@@ -271,12 +298,16 @@ function Test-Item
     https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
-    Test-TridionItem 'tcm:1-155-5110'
-    Returns if id 'tcm:1-155-5110' exists.
+    Test-TridionItem 'tcm:1-59'
+    Returns $true if a Component with ID 'tcm:1-59' exists; $false otherwise.
+
+    .Example
+    Test-TridionItem 'tcm:1-155-64'
+    Returns $true if a Page with ID 'tcm:1-155-64' exists; $false otherwise.
 
     .Example
     Test-TridionItem '/webdav/02 Publication'
-    Returns if webdav path '/webdav/02 Publication' exists.
+    Returns if a Publication with WebDAV path '/webdav/02 Publication' exists; $false otherwise.
     
     #>
     [CmdletBinding()]
@@ -303,6 +334,7 @@ function Test-Item
 		Close-CoreServiceClient $client;
 	}
 }
+
 
 <#
 **************************************************
