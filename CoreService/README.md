@@ -1,5 +1,13 @@
-RELEASE NOTES (Tridion-CoreService)
+### Tridion-CoreService module
 
+This module contains cmdlets that allow you to talk to the Tridion Content Manager using the Core Service.
+
+
+### Installation
+[Click here to view the installation instructions](../)], which covers installation of all of the modules.
+
+
+### Release notes
 
 v2.2.0.0
 
