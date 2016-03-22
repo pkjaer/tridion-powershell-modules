@@ -254,7 +254,7 @@ Function Get-Item
 	}
 }
 
-function Test-Object
+function Test-Item
 {
     <#
     .Synopsis
@@ -271,11 +271,11 @@ function Test-Object
     https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
-    Test-Object 'tcm:1-155-5110'
+    Test-TridionItem 'tcm:1-155-5110'
     Returns if id 'tcm:1-155-5110' exists.
 
     .Example
-    Test-Object '/webdav/02 Publication'
+    Test-TridionItem '/webdav/02 Publication'
     Returns if webdav path '/webdav/02 Publication' exists.
     
     #>
@@ -313,4 +313,4 @@ Export-ModuleMember Get-Item
 Export-ModuleMember Get-Publications
 Export-ModuleMember Get-PublicationTarget
 Export-ModuleMember Get-PublicationTargets
-Export-ModuleMember Test-Object
+Export-ModuleMember Test-Item
