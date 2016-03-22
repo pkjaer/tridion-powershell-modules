@@ -81,6 +81,104 @@ function Get-Publications
 	}
 }
 
+function Get-PublicationTargets
+{
+    <#
+    .Synopsis
+    Gets a list of Publication Targets present in Tridion Content Manager.
+
+    .Inputs
+    None.
+
+    .Outputs
+    Returns a list of objects of type [Tridion.ContentManager.CoreService.Client.PublicationTargetData].
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    Get-TridionPublicationTargets
+	Returns a list of all publication targets within Tridion.
+	
+    #>
+    [CmdletBinding()]
+	Param()
+	
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
+    Process
+    {
+        if ($client -ne $null)
+        {
+			Write-Verbose "Loading list of Publications...";
+			$filter = New-Object Tridion.ContentManager.CoreService.Client.PublicationTargetsFilterData;
+			return $client.GetSystemWideList($filter);
+        }
+    }
+	
+	End
+	{
+		Close-CoreServiceClient $client;
+	}
+}
+
+function Get-PublicationTarget
+{
+    <#
+    .Synopsis
+    Gets information about a specific Tridion publication target.
+
+    .Description
+    Gets a publication target object containing information about the specified publication target within Tridion.
+
+    .Inputs
+    None.
+
+    .Outputs
+    Returns an object of type [Tridion.ContentManager.CoreService.Client.PublicationTargetData].
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    Get-TridionPublicationTarget "Staging"
+    Returns information about the publication target named 'Staging'.
+	
+	.Example
+    Get-TridionPublicationTarget "tcm:2-12-65552"
+    Returns information about publication target with the id 'tcm:2-12-65552'.
+    
+    #>
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+        [string]$PublicationTarget
+    )
+
+	Write-Verbose "Loading Tridion publication target '$PublicationTarget'...";
+	if ($PublicationTarget.StartsWith('tcm'))
+	{
+		$PublicationTargetObj = Get-Item $PublicationTarget
+	}
+	else
+	{
+		$PublicationTargetObj = Get-PublicationTargets | ?{$PublicationTarget -eq $_.Title} | Select -First 1
+		if (-not $PublicationTargetObj)
+		{
+			Write-Error "The Publication Target '$PublicationTarget' does not exist."
+			return $null;
+		}
+	}
+	
+	return $PublicationTargetObj
+}
 
 Function Get-Item
 {
@@ -156,6 +254,56 @@ Function Get-Item
 	}
 }
 
+function Test-Item
+{
+    <#
+    .Synopsis
+    Checks if the item with the given ID exists.
+	
+    .Inputs
+    None.
+
+    .Outputs
+    Returns a boolean type.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    Test-TridionItem 'tcm:1-155-5110'
+    Returns if id 'tcm:1-155-5110' exists.
+
+    .Example
+    Test-TridionItem '/webdav/02 Publication'
+    Returns if webdav path '/webdav/02 Publication' exists.
+    
+    #>
+    [CmdletBinding()]
+    Param
+    (
+		# The TCM URI of the user to load. If omitted, data for the current user is loaded instead.
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Id
+    )
+	
+	Begin
+	{
+		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
+    Process
+    {
+        return $client.IsExistingObject($Id);
+    }
+	
+	End
+	{
+		Close-CoreServiceClient $client;
+	}
+}
+
 <#
 **************************************************
 * Export statements
@@ -163,3 +311,6 @@ Function Get-Item
 #>
 Export-ModuleMember Get-Item
 Export-ModuleMember Get-Publications
+Export-ModuleMember Get-PublicationTarget
+Export-ModuleMember Get-PublicationTargets
+Export-ModuleMember Test-Item
