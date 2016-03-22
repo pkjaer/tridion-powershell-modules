@@ -10,7 +10,7 @@ function Get-User
 {
     <#
     .Synopsis
-    Gets information about the a specific Tridion user. Defaults to the current user.
+    Gets information about a specific Tridion user. Defaults to the current user.
 
     .Description
     Gets a UserData object containing information about the specified user within Tridion. 
@@ -94,7 +94,7 @@ function Get-Group
 {
     <#
     .Synopsis
-    Gets information about the a specific Tridion group.
+    Gets information about a specific Tridion group.
 
     .Description
     Gets a group object containing information about the specified group within Tridion.
@@ -114,7 +114,7 @@ function Get-Group
     Returns information about the group 'WebMaster'.
 	
 	.Example
-    Get-TridionUser "tcm:2-12-65552"
+    Get-TridionGroup "tcm:2-12-65552"
     Returns information about group with the id 'tcm:2-12-65552'.
     
     #>
@@ -126,17 +126,23 @@ function Get-Group
         [string]$Group
     )
 
-	Write-Verbose "Loading Tridion group...";
-	$GroupObj = Get-Groups | ?{($group -eq ($_.Id)) -or ($group -eq $_.Title)} | Select -First 1
-	if (-not $GroupObj)
+	Write-Verbose "Loading Tridion group '$group'..."
+	if ($Group.StartsWith('tcm'))
 	{
-		Write-Error "The group '$Group' does not exist.";
-		return $null;
+		$GroupObj = Get-Item $Group
+	}
+	else
+	{
+		$GroupObj = Get-Groups | ?{$group -eq $_.Title} | Select -First 1
+		if (-not $GroupObj)
+		{
+			Write-Error "The group '$Group' does not exist."
+			return $null;
+		}
 	}
 	
 	return $GroupObj
 }
-
 
 Function Get-Users
 {
