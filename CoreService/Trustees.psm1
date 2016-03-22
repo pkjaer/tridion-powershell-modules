@@ -571,6 +571,192 @@ function New-User
 	}	
 }
 
+
+function Disable-User
+{
+    <#
+    .Synopsis
+    Disables the specified user in Tridion Content Manager.
+
+    .Description
+    Disables the specified user in Tridion Content Manager, preventing the user from logging in or performing any actions.
+    This action lasts until Enable-User is called or the user is explicitly enabled by other means (such as within the CME).
+
+    .Inputs
+    [string] Id: the TCM URI of the user.
+	OR
+	[Tridion.ContentManager.CoreService.Client.UserData] User: The already-loaded User object. Mostly used when using the pipeline (results from previous command).
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    Disable-TridionUser -Id "tcm:0-25-65552"
+    Disables the user with ID 'tcm:0-25-65552', preventing them from accessing the Tridion Content Manager.
+	
+	.Example
+	Get-TridionUsers | where {$_.Description.StartsWith('Peter ') } | Disable-TridionUser
+	Disables all users with the first name 'Peter'.
+	
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Low', DefaultParameterSetName='ById')]
+    Param(
+			# The TCM URI of the user to disable
+            [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById')]
+			[ValidateNotNullOrEmpty()]
+            [string]$Id,
+
+			# The User object of the user to disable
+            [Parameter(Mandatory=$true, ValueFromPipeline=$true, ParameterSetName='WithObject')]
+			[ValidateNotNullOrEmpty()]
+            [Tridion.ContentManager.CoreService.Client.UserData]$User
+    )
+	
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+
+    Process
+    {
+        if ($client -eq $null) { return; }
+        
+		switch($PsCmdlet.ParameterSetName)
+		{
+			'ById' 
+			{ 
+				if (!$Id.EndsWith('65552'))
+				{
+					Write-Error "'$Id' is not a valid User.";
+					return;
+				}
+				
+				$user = Get-Item -Id $Id -ErrorAction SilentlyContinue -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+				if ($user -eq $null) 
+				{ 
+					Write-Error "'$Id' is not a valid User.";
+					return; 
+				}
+				
+				break; 
+			}
+			'WithObject' 
+			{
+				if ($User -eq $null) { return; }
+				$user = $User;
+				break; 
+			}
+		}
+		
+		if ($PSCmdLet.ShouldProcess("User { Name: '$($user.Title)', Description: '$($user.Description)' }", "Disable")) 
+		{
+			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+			$user.IsEnabled = $false;
+			$client.Save($user, $readOptions) | Out-Null;
+			Write-Verbose ("User '{0}' has been disabled." -f $user.Description);
+		}
+    }
+	
+	End
+	{
+		Close-CoreServiceClient $client;
+	}	
+}
+
+
+function Enable-User
+{
+    <#
+    .Synopsis
+    Enables the specified user in Tridion Content Manager.
+
+    .Description
+    Enables the specified user in Tridion Content Manager, after he or she has previously been disabled.
+
+    .Inputs
+    [string] Id: the TCM URI of the user.
+	OR
+	[Tridion.ContentManager.CoreService.Client.UserData] User: The already-loaded User object. Mostly used when using the pipeline (results from previous command).
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    Enable-TridionUser -Id "tcm:0-25-65552"
+    Re-enables the user with ID 'tcm:0-25-65552'.
+	
+	.Example
+	Get-TridionUsers | where {$_.Description.StartsWith('Peter ') } | Enable-TridionUser
+	Re-enables all users with the first name 'Peter'.
+	
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Low')]
+    Param(
+			# The TCM URI of the user to enable
+            [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById')]
+			[ValidateNotNullOrEmpty()]
+            [string]$Id,
+
+			# The User object of the user to enable
+            [Parameter(Mandatory=$true, ValueFromPipeline=$true, ParameterSetName='WithObject')]
+			[ValidateNotNullOrEmpty()]
+            [Tridion.ContentManager.CoreService.Client.UserData]$User
+    )
+	
+	Begin
+	{
+        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+
+    Process
+    {
+        if ($client -eq $null) { return; }
+        
+		switch($PsCmdlet.ParameterSetName)
+		{
+			'ById' 
+			{ 
+				if (!$Id.EndsWith('65552'))
+				{
+					Write-Error "'$Id' is not a valid User.";
+					return;
+				}
+				
+				$user = Get-Item -Id $Id -ErrorAction SilentlyContinue -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+				if ($user -eq $null) 
+				{ 
+					Write-Error "'$Id' is not a valid User.";
+					return; 
+				}
+				
+				break; 
+			}
+			'WithObject' 
+			{
+				if ($User -eq $null) { return; }
+				$user = $User;
+				break; 
+			}
+		}
+		
+		if ($PSCmdLet.ShouldProcess("User { Name: '$($user.Title)', Description: '$($user.Description)' }", "Enable")) 
+		{
+			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+			$user.IsEnabled = $true;
+			$client.Save($user, $readOptions) | Out-Null;
+			Write-Verbose ("User '{0}' has been enabled." -f $user.Description);
+		}
+    }
+	
+	End
+	{
+		Close-CoreServiceClient $client;
+	}
+}
+
+
 <#
 **************************************************
 * Export statements
@@ -582,3 +768,5 @@ Export-ModuleMember Get-Group
 Export-ModuleMember Get-Groups
 Export-ModuleMember New-Group
 Export-ModuleMember New-User
+Export-ModuleMember Disable-User
+Export-ModuleMember Enable-User
