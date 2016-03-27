@@ -1,5 +1,13 @@
-RELEASE NOTES (Tridion-CoreService)
+### Tridion-CoreService module
 
+This module contains cmdlets that allow you to talk to the Tridion Content Manager using the Core Service.
+
+
+### Installation
+[Click here to view the installation instructions](https://github.com/pkjaer/tridion-powershell-modules/), which cover installation of all of the modules.
+
+
+### Release notes
 
 v2.2.0.0
 
@@ -9,6 +17,7 @@ v2.2.0.0
 - Added support for getting a list of Publication Targets (Get-TridionPublicationTargets)
 - Added support for reading Publication Targets and Groups (Get-TridionPublicationTarget, Get-TridionGroup). 
   Both methods support loading the items either by TCM URI or the Title of the item.
+- Added support for reading a user by Title or Description.
 - Added Test-TridionItem, which returns a boolean indicating if the item exists in the Content Manager.
 - Added a new configuration setting called 'ConnectionSendTimeout', which controls the amount of time to wait for a connection before timing out.
 

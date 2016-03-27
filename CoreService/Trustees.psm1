@@ -45,13 +45,23 @@ function Get-User
     Returns information about user #11 within Tridion (typically the Administrator user created during installation).
     
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='ById')]
     Param
     (
 		# The TCM URI of the user to load. If omitted, data for the current user is loaded instead.
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
-        [string]$Id
+        [string]$Id,
+
+		# The name (including domain) of the user to load.
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Title,
+		
+		# The description of the user to load.
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByDescription', Position=0)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Description
     )
 
 	Begin
@@ -61,27 +71,56 @@ function Get-User
     
     Process
     {
-        if ($client -ne $null)
-        {
-			if (-not $Id)
+		switch($PsCmdlet.ParameterSetName)
+		{
+			'ById' 
 			{
-				Write-Verbose "Loading current user...";
-				$client.GetCurrentUser();
-			}
-			else
-			{
-				Write-Verbose "Loading Tridion user...";
-				if (-not $client.IsExistingObject($Id))
+				if (-not $Id)
 				{
-					Write-Error "The user '$Id' does not exist.";
-					return $null;
+					Write-Verbose "Loading current user...";
+					return $client.GetCurrentUser();
 				}
 				
-				$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
-				$readOptions.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::WebdavUrls -bor [Tridion.ContentManager.CoreService.Client.LoadFlags]::Expanded;
-				return $client.Read($Id, $readOptions);
+				if (!$Id.EndsWith('-65552'))
+				{
+					Write-Error "'$Id' is not a valid User URI.";
+					return;
+				}
+
+				Write-Verbose "Loading User with ID '$Id'..."
+				$result = Get-Item $Id -ErrorAction SilentlyContinue;
+				if (-not $result)
+				{
+					Write-Error "User '$Id' does not exist.";
+					return $null;
+				}
+				return $result;
 			}
-        }
+			
+			'ByTitle'
+			{
+				Write-Verbose "Loading User with title '$Title'..."
+				$result = Get-Users | ?{$_.Title -eq $Title} | Select -First 1;
+				if (-not $result)
+				{
+					Write-Error "There is no User named '$Title'.";
+					return $null;
+				}
+				return $result;
+			}
+
+			'ByDescription'
+			{
+				Write-Verbose "Loading User with description '$Description'..."
+				$result = Get-Users | ?{$_.Description -eq $Description} | Select -First 1;
+				if (-not $result)
+				{
+					Write-Error "There is no User with a description of '$Description'.";
+					return $null;
+				}
+				return $result;
+			}
+		}
     }
 	
 	End
@@ -94,61 +133,90 @@ function Get-Group
 {
     <#
     .Synopsis
-    Gets information about a specific Tridion group.
+    Gets information about a specific Tridion Group.
 
     .Description
-    Gets a group object containing information about the specified group within Tridion.
+    Gets an object containing information about the specified Group within Tridion.
+
+    .Notes
+    Example of properties available: Id, Title, Description, Scope, etc.
+    
+    For a full list, consult the Content Manager Core Service API Reference Guide documentation 
+    (Tridion.ContentManager.Data.Security.GroupData object)
 
     .Inputs
     None.
 
     .Outputs
-    Returns an object of type [Tridion.ContentManager.CoreService.Client.TrusteeData].
+    Returns an object of type [Tridion.ContentManager.CoreService.Client.GroupData].
 
     .Link
     Get the latest version of this script from the following URL:
     https://github.com/pkjaer/tridion-powershell-modules
-
-    .Example
-    Get-TridionGroup "WebMaster"
-    Returns information about the group 'WebMaster'.
 	
 	.Example
-    Get-TridionGroup "tcm:2-12-65552"
-    Returns information about group with the id 'tcm:2-12-65552'.
+    Get-TridionGroup "tcm:0-7-65568"
+    Returns information about the Group with the ID 'tcm:0-7-65568'.
+
+    .Example
+    Get-TridionGroup -Title "Editor"
+    Returns information about the Group named 'Editor'.
     
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='ById')]
     Param
     (
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
-        [string]$Group
-    )
+        [string]$Id,
 
-	Write-Verbose "Loading Tridion group '$group'..."
-	if ($Group.StartsWith('tcm'))
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Title
+    )
+	
+	Process
 	{
-		$GroupObj = Get-Item $Group
-	}
-	else
-	{
-		$GroupObj = Get-Groups | ?{$group -eq $_.Title} | Select -First 1
-		if (-not $GroupObj)
+		switch($PsCmdlet.ParameterSetName)
 		{
-			Write-Error "The group '$Group' does not exist."
-			return $null;
+			'ById' 
+			{
+				if (!$Id.EndsWith('-65568'))
+				{
+					Write-Error "'$Id' is not a valid Group URI.";
+					return;
+				}
+
+				Write-Verbose "Loading Tridion Group with ID '$Id'..."
+				$result = Get-Item $Id -ErrorAction SilentlyContinue;
+				if (-not $result)
+				{
+					Write-Error "Group '$Id' does not exist.";
+					return $null;
+				}
+				return $result;
+			}
+			
+			'ByTitle'
+			{
+				Write-Verbose "Loading Tridion Group with title '$Title'..."
+				$result = Get-Groups | ?{$_.Title -eq $Title} | Select -First 1;
+				if (-not $result)
+				{
+					Write-Error "There is no Group named '$Title'.";
+					return $null;
+				}
+				return $result;
+			}
 		}
 	}
-	
-	return $GroupObj
 }
 
 Function Get-Users
 {
     <#
     .Synopsis
-    Gets a list of user within Tridion Content Manager.
+    Gets a list of users within Tridion Content Manager.
 
     .Description
     Gets a list of users within Tridion Content Manager. 
@@ -626,7 +694,7 @@ function Disable-User
 		{
 			'ById' 
 			{ 
-				if (!$Id.EndsWith('65552'))
+				if (!$Id.EndsWith('-65552'))
 				{
 					Write-Error "'$Id' is not a valid User.";
 					return;
@@ -718,7 +786,7 @@ function Enable-User
 		{
 			'ById' 
 			{ 
-				if (!$Id.EndsWith('65552'))
+				if (!$Id.EndsWith('-65552'))
 				{
 					Write-Error "'$Id' is not a valid User.";
 					return;
