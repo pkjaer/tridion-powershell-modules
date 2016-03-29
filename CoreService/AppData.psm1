@@ -149,20 +149,28 @@ Function Set-ApplicationData
 
     .Example
     Set-TridionApplicationData -Subject "tcm:0-12-65552" -Application "cme:UserPreferences" -Data ""
-	Returns the User Preferences XML for the given user.
+	Sets the User Preferences XML for the given user.
+	
+	.Example
+    Set-TridionApplicationData -Subject "tcm:0-12-65552" -ApplicationData $AppDataObject
+	Sets the User Preferences XML for the given user.
 
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='ByData')]
     Param
     (
 		# The application which stored the data
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true, ParameterSetName='ByData')]
 		[ValidateNotNullOrEmpty()]
         [string]$Application,
 		
-		[Parameter(Mandatory=$true)]
+		[Parameter(Mandatory=$true, ParameterSetName='ByData')]
 		[ValidateNotNull()]
 		$Data,
+		
+		[Parameter(Mandatory=$true, ParameterSetName='ByAppData')]
+		[ValidateNotNull()]
+		$ApplicationData,
 
 		# The subject the data should be attached to
         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
@@ -178,10 +186,21 @@ Function Set-ApplicationData
     {
         if ($client -ne $null)
         {
-			$ada = New-Object Tridion.ContentManager.CoreService.Client.ApplicationDataAdapter -ArgumentList @($Application, $Data)
-			if ($ada -ne $null)
+			switch($PsCmdlet.ParameterSetName)
 			{
-				$client.SaveApplicationData($Subject, @($ada.ApplicationData));
+				'ByData' 
+				{
+					$ada = New-Object Tridion.ContentManager.CoreService.Client.ApplicationDataAdapter -ArgumentList @($Application, $Data)
+					if ($ada -ne $null)
+					{
+						$client.SaveApplicationData($Subject, @($ada.ApplicationData));
+					}
+				}
+				
+				'ByAppData' 
+				{
+					$client.SaveApplicationData($Subject, @($ApplicationData));
+				}
 			}
 		}
     }
