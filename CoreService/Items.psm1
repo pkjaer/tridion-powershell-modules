@@ -313,7 +313,7 @@ function Test-Item
     [CmdletBinding()]
     Param
     (
-		# The TCM URI of the user to load. If omitted, data for the current user is loaded instead.
+		# The TCM URI of the item you wish to know exists. 
         [Parameter(ValueFromPipelineByPropertyName=$true)]
 		[ValidateNotNullOrEmpty()]
         [string]$Id
