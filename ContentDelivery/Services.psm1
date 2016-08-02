@@ -219,7 +219,11 @@ function Test-ContentDeliveryServices
 			
 			try
 			{
+				# Contact the service for the capability to check if it's running / giving errors
 				$response = Invoke-RestMethod -Uri $entry.URL -Method GET -Headers $headers;
+				$entry.Status = "Running";
+				
+				# Optionally include the response from the service in the output
 				if ($IncludeResponses)
 				{
 					$entry.Details = $response;
@@ -229,7 +233,6 @@ function Test-ContentDeliveryServices
 						$entry.Details = $responseXml.OuterXml;
 					}
 				}
-				$entry.Status = "Running";
 			}
 			catch
 			{
