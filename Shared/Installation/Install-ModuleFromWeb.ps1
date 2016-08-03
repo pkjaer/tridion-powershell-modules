@@ -49,9 +49,9 @@ Function Completed([string]$ModuleName)
 	Write-Host "The $ModuleName PowerShell module (version $version) has been installed and loaded." -Foreground Green;
 }
 
-Function ReplaceSlashes([string]$file)
+Function ReplaceSlashes([string]$File)
 {
-	return $file.Replace('/', '\');
+	return $File.Replace('/', '\');
 }
 
 
@@ -96,7 +96,7 @@ Function Install-ModuleFromWeb
 	
 	Process 
 	{ 
-		$baseDir = EnsureDirectoriesExist($ModuleName, $Directories);
+		$baseDir = EnsureDirectoriesExist -ModuleName $ModuleName -Directories $Directories;
 		$max = $Files.Count;
 		$idx = 0;
 		
@@ -105,10 +105,10 @@ Function Install-ModuleFromWeb
 		$net = (New-Object Net.WebClient);
 		$net.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;
 
-		foreach ($file in $Files)
+		foreach ([string]$file in $Files)
 		{
 			$source = $BaseUrl + '/' + $file;
-			$destination = ReplaceSlashes((Join-Path $baseDir $file));
+			$destination = ReplaceSlashes -File (Join-Path -Path $baseDir -ChildPath $file);
 			try
 			{
 				$net.DownloadFile($source, $destination);
