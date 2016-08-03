@@ -30,4 +30,4 @@ $files = @(
 wget "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/Shared/Installation/Install-ModuleFromWeb.ps1" | iex
 
 # Install the above files and directories
-Install-ModuleFromWeb("Tridion-CoreService", $baseDownloadUrl, $files, $directories);
+Install-ModuleFromWeb -ModuleName "Tridion-CoreService" -BaseUrl $baseDownloadUrl -Files $files -Directories $directories;

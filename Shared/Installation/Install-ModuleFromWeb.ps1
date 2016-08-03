@@ -4,11 +4,11 @@
 $ErrorActionPreference = 'Stop';
 
 
-function EnsureDirectoriesExist($moduleName, $directories)
+function EnsureDirectoriesExist($ModuleName, $Directories)
 {
 	# Locate the user's module directory
-    $modulePaths = @($env:PSModulePath -split ';');
-	$expectedPath = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath WindowsPowerShell\Modules;
+    $modulePaths = @($env:PSModulePath -Split ';');
+	$expectedPath = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath 'WindowsPowerShell\Modules';
 	$destination = $modulePaths | Where-Object { $_ -eq $expectedPath } | Select -First 1;
 	
 	if (-not $destination) 
@@ -17,9 +17,9 @@ function EnsureDirectoriesExist($moduleName, $directories)
 	}
 
 	# Create the module folders
-	$baseDir = (Join-Path -Path $destination -ChildPath $moduleName);
+	$baseDir = (Join-Path -Path $destination -ChildPath $ModuleName);
 	
-	foreach($dir in $directories)
+	foreach($dir in $Directories)
 	{
 		$path = Join-Path $baseDir $dir;
 		New-Item -Path $path -ItemType Directory -Force | Out-Null;
@@ -32,16 +32,16 @@ function EnsureDirectoriesExist($moduleName, $directories)
 	return $baseDir;
 }
 
-function Completed($moduleName)
+function Completed($ModuleName)
 {
 	# Load the new module and report success
-	if (Get-Module $moduleName)
+	if (Get-Module $ModuleName)
 	{
-		Remove-Module -Force $moduleName | Out-Null;
+		Remove-Module -Force $ModuleName | Out-Null;
 	}
-	Import-Module $moduleName | Out-Null;
-	$version = (Get-Module $moduleName).Version.ToString();
-	Write-Host "The $moduleName PowerShell module (version $version) has been installed and loaded." -Foreground Green;
+	Import-Module $ModuleName | Out-Null;
+	$version = (Get-Module $ModuleName).Version.ToString();
+	Write-Host "The $ModuleName PowerShell module (version $version) has been installed and loaded." -Foreground Green;
 }
 
 function ReplaceSlashes([string]$file)
@@ -49,21 +49,21 @@ function ReplaceSlashes([string]$file)
 	return $file.Replace('/', '\');
 }
 
-function Install-ModuleFromWeb($moduleName, $baseDownloadUrl, $files, $directories)
+function Install-ModuleFromWeb([string]$ModuleName, [string]$BaseUrl, $Files, $Directories)
 {
-	$baseDir = EnsureDirectoriesExist($moduleName, $directories);
-	$max = $files.Count;
+	$baseDir = EnsureDirectoriesExist($ModuleName, $Directories);
+	$max = $Files.Count;
 	$idx = 0;
 	
 	# Download all of the files
-    Write-Host "Downloading $moduleName PowerShell module ($max files)...";
+    Write-Host "Downloading $ModuleName PowerShell module ($max files)...";
     $net = (New-Object Net.WebClient);
     $net.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;
 
-	foreach ($file in $files)
+	foreach ($file in $Files)
 	{
 		$destination = ReplaceSlashes((Join-Path $baseDir $file));
-		$net.DownloadFile("$baseDownloadUrl/$file", $destination);
+		$net.DownloadFile("$BaseUrl/$file", $destination);
 		Write-Progress -Activity "Downloading module files" -Status $file -PercentComplete ((++$idx / $max) * 100);
 	}
 
