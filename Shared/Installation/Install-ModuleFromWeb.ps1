@@ -116,7 +116,7 @@ Function Install-ModuleFromWeb
 			catch
 			{
 				$errorMessage = $_.Exception.Message;
-				throw "Failed to download the file: $source. Reason: $errorMessage";
+				throw "Failed to download the file: '$source' to destination '$destination'. Reason: $errorMessage";
 			}
 			
 			Write-Progress -Activity "Downloading module files" -Status $file -PercentComplete ((++$idx / $max) * 100);
