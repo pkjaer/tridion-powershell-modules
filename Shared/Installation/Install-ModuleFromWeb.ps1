@@ -107,8 +107,18 @@ Function Install-ModuleFromWeb
 
 		foreach ($file in $Files)
 		{
+			$source = $BaseUrl + '/' + $file;
 			$destination = ReplaceSlashes((Join-Path $baseDir $file));
-			$net.DownloadFile("$BaseUrl/$file", $destination);
+			try
+			{
+				$net.DownloadFile($source, $destination);
+			}
+			catch
+			{
+				$errorMessage = $_.Exception.Message;
+				throw "Failed to download the file: $source. Reason: $errorMessage";
+			}
+			
 			Write-Progress -Activity "Downloading module files" -Status $file -PercentComplete ((++$idx / $max) * 100);
 		}
 
