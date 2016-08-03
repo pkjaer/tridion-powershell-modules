@@ -19,6 +19,7 @@ $files = @(
 	'AppData.psm1', 
 	'Client.psm1', 
 	'Items.psm1', 
+	'Publishing.psm1', 
 	'Settings.psm1', 
 	'Tridion-CoreService.psd1', 
 	'Trustees.psm1'
