@@ -11,7 +11,6 @@ $baseDownloadUrl = "https://raw.githubusercontent.com/pkjaer/tridion-powershell-
 # List of all the files to install
 $directories = @("Installation");
 $files = @(
-	'Installation/Install.ps1',
 	'Installation/Verify.ps1',
 	'Plugins.psm1', 
 	'Settings.psm1', 
