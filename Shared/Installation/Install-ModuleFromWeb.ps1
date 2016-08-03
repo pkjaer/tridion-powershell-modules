@@ -122,6 +122,6 @@ Function Install-ModuleFromWeb
 			Write-Progress -Activity "Downloading module files" -Status $file -PercentComplete ((++$idx / $max) * 100);
 		}
 
-		Completed;
+		Completed -ModuleName $ModuleName;
 	}
 }
