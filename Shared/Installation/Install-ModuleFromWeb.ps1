@@ -105,7 +105,7 @@ Function Install-ModuleFromWeb
 		$net = (New-Object Net.WebClient);
 		$net.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;
 
-		foreach ([string]$file in $Files)
+		foreach ($file in $Files)
 		{
 			$source = $BaseUrl + '/' + $file;
 			$destination = ReplaceSlashes -File (Join-Path -Path $baseDir -ChildPath $file);
