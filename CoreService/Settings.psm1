@@ -260,6 +260,24 @@ Function Set-CoreServiceSettings
     }
 }
 
+Function Clear-CoreServiceSettings
+{
+    <#
+    .Synopsis
+    Gets the settings used to connect to the Core Service.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+	#>
+    [CmdletBinding()]
+    Param()
+	
+	Process {
+        $settings = Get-DefaultSettings
+        Save-Settings $settings
+    }
+}
 
 <#
 **************************************************
@@ -268,3 +286,4 @@ Function Set-CoreServiceSettings
 #>
 Export-ModuleMember Get-CoreServiceSettings;
 Export-ModuleMember Set-CoreServiceSettings;
+Export-ModuleMember Clear-CoreServiceSettings;
