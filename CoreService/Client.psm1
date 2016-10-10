@@ -123,6 +123,7 @@ Function Get-CoreServiceClient
         $binding = Get-CoreServiceBinding;
 		
 		#Load the assembly without locking the file
+        Write-Verbose ("Loading assembly {0}" -f $serviceInfo.AssemblyPath) 
 		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
 		if (!$assemblyBytes) { throw "Unable to load the assembly at: " + $serviceInfo.AssemblyPath; }
         $assembly = [Reflection.Assembly]::Load($assemblyBytes);
