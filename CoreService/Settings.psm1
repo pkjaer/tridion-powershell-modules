@@ -46,6 +46,7 @@ Function Get-DefaultSettings
 		"ConnectionSendTimeout" = "00:01:00";
 		"HostName" = "localhost";
 		"UserName" = ([Environment]::UserDomainName + "\" + [Environment]::UserName);
+        "Password" = "";
 		"Version" = "2011-SP1";
 		"ConnectionType" = "Default";
 		"ModuleVersion" = $moduleVersion;
@@ -123,7 +124,11 @@ Function Save-Settings($settings)
 				New-Item -Path $settingsDir -ItemType Container | Out-Null
 			}
 			
+            #todo Find a more elegant way to prevent saving the password to the settings file
+            $password = $settings.Password
+            $settings.Password = ""
 			Export-Clixml -Path $settingsFile -InputObject $settings;
+    		$settings.Password = $password
 			$script:Settings = $settings;
 		}
 		catch
@@ -183,6 +188,9 @@ Function Set-CoreServiceSettings
 		[Parameter()]
 		[string]$UserName,
 		
+		[Parameter()]
+		[string]$Password,
+		
 		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp')]
 		[Parameter()]
 		[string]$ConnectionType,
@@ -198,6 +206,7 @@ Function Set-CoreServiceSettings
     {
 		$hostNameSpecified = (![string]::IsNullOrEmpty($HostName));
 		$userNameSpecified = (![string]::IsNullOrEmpty($UserName));
+        $passwordSpecified = (![string]::IsNullOrEmpty($Password));
 		$versionSpecified = (![string]::IsNullOrEmpty($Version));
 		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
 		$connectionSendTimeoutSpecified = (![string]::IsNullOrEmpty($ConnectionSendTimeout));
@@ -207,6 +216,7 @@ Function Set-CoreServiceSettings
 		if ($connectionSendTimeoutSpecified) { $settings.ConnectionSendTimeout = $ConnectionSendTimeout; }
 		if ($hostNameSpecified) { $settings.HostName = $HostName; }
 		if ($userNameSpecified) { $settings.UserName = $UserName; }
+        if ($passwordSpecified) { $settings.Password = $Password; }
 		if ($versionSpecified) { $settings.Version = $Version; }
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
