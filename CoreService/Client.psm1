@@ -134,7 +134,7 @@ Function Get-CoreServiceClient
     {
         try
         {
-			$proxy = [Activator]::CreateInstance($instanceType, $binding, $endpoint);
+            $proxy = [Activator]::CreateInstance($instanceType.FullName, $binding, $endpoint);
             if($serviceInfo.Username -and $serviceInfo.Password)
             {
                 Write-Verbose "Using credentials of CoreServiceSettings";
