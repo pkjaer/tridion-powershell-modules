@@ -9,6 +9,9 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 ### Release notes
 
+v2.2.0.1
+- Added support for Web 8.3-5
+
 v2.2.0.0
 
 - Added these release notes.

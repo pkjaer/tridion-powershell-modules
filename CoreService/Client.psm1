@@ -43,6 +43,18 @@ Function Get-CoreServiceBinding
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Transport;
 			$binding.Security.Transport.ClientCredentialType = "Windows";
 		}
+		"BASIC"
+		{
+			$binding = New-Object System.ServiceModel.BasicHttpBinding;
+			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Message;
+			$binding.Security.Transport.ClientCredentialType = "Basic";
+		}
+		"BASIC-SSL"
+		{
+			$binding = New-Object System.ServiceModel.BasicHttpsBinding;
+			$binding.Security.Mode = [System.ServiceModel.BasicHttpsSecurityMode]::Transport;
+			$binding.Security.Transport.ClientCredentialType = "Basic";
+		}
 		default 
 		{ 
 			$binding = New-Object System.ServiceModel.WSHttpBinding; 
@@ -116,13 +128,13 @@ Function Get-CoreServiceClient
         # Load information about the Core Service client available on this system
         $serviceInfo = Get-CoreServiceSettings
         
-        Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.HostName);
+        Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.EndpointUrl);
         
         # Load the Core Service Client
         $endpoint = New-Object System.ServiceModel.EndpointAddress -ArgumentList $serviceInfo.EndpointUrl
         $binding = Get-CoreServiceBinding;
-		
-		#Load the assembly without locking the file
+
+        #Load the assembly without locking the file
         Write-Verbose ("Loading assembly {0}" -f $serviceInfo.AssemblyPath) 
 		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
 		if (!$assemblyBytes) { throw "Unable to load the assembly at: " + $serviceInfo.AssemblyPath; }
@@ -138,6 +150,8 @@ Function Get-CoreServiceClient
             if($serviceInfo.Username -and $serviceInfo.Password)
             {
                 Write-Verbose "Using credentials of CoreServiceSettings";
+				$proxy.ClientCredentials.UserName.UserName = $serviceInfo.Username;
+				$proxy.ClientCredentials.UserName.Password = $serviceInfo.Password;
                 
 				$proxy.ClientCredentials.Windows.ClientCredential.UserName = $serviceInfo.Username;
 				$proxy.ClientCredentials.Windows.ClientCredential.Password = $serviceInfo.Password;
