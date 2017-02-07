@@ -335,6 +335,75 @@ function Test-Item
 	}
 }
 
+function New-Item
+{
+    <#
+    .Synopsis
+    Creates a new Tridion item of the specified type.
+	
+    .Inputs
+    None.
+
+    .Outputs
+    Returns the newly created item.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    New-TridionItem -ItemType 4 -Title 'My new Structure Group' -Parent 'tcm:0-5-1'
+    Creates a new Structure Group with the title "My new Structure Group" as a root Structure Group in Publication with ID 'tcm:0-5-1'.
+    
+    .Example
+    New-TridionItem -ItemType 4 -Title 'My new Structure Group' -Parent 'tcm:6-11-4'
+    Creates a new Structure Group with the title "My new Structure Group" within the parent Structure Group with ID 'tcm:6-11-4'.
+    
+    #>
+    [CmdletBinding()]
+    Param
+    (
+		# The item type of the new item
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
+        [int]$ItemType,
+		
+		# The title of the new item
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Title,
+		
+		# ID of the parent Publication / Structure Group / Folder / etc.
+		[Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+		[string]$Parent
+    )
+	
+	Begin
+	{
+		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
+    Process
+    {
+		$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+		$item = $client.GetDefaultData($ItemType, $Parent, $readOptions);
+		
+		if ($Title)
+		{
+			$item.Title = $Title;
+		}		
+		
+        $result = $client.Save($item, $readOptions);
+		return $result;
+    }
+	
+	End
+	{
+		Close-CoreServiceClient $client;
+	}
+}
+
+
 function New-Publication
 {
     <#
@@ -410,6 +479,76 @@ function New-Publication
 	}
 }
 
+function Remove-Item
+{
+    <#
+    .Synopsis
+    Deletes the given Tridion item, if possible.
+	
+    .Inputs
+    None.
+
+    .Outputs
+    None.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    Remove-TridionItem -Id 'tcm:5-444-2'
+    Deletes the folder with the given ID.
+    
+    .Example
+    Get-TridionItem -Id 'tcm:5-444-2' | Remove-TridionItem
+    Retrieves a specific Folder and then attempts to delete it.
+    
+    #>
+    [CmdletBinding()]
+    Param
+    (
+		# The title of the new Publication
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Id,
+		
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='WithObject', Position=0)]
+		[ValidateNotNull()]
+        $Item
+    )
+	
+	Begin
+	{
+		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
+    Process
+    {
+		switch($PsCmdlet.ParameterSetName)
+		{
+			'ById' 
+			{
+				Write-Verbose "Deleting item with ID '$Id'..."
+				$client.Delete($Id);
+			}
+			
+			'WithObject'
+			{
+				$Title = $Item.Title;
+				Write-Verbose "Deleting '$Title' ($Id)..."
+				$client.Delete($Item.Id);
+			}
+		}
+		
+    }
+	
+	End
+	{
+		Close-CoreServiceClient $client;
+	}
+}
+
+
 <#
 **************************************************
 * Export statements
@@ -419,5 +558,7 @@ Export-ModuleMember Get-Item
 Export-ModuleMember Get-Publications
 Export-ModuleMember Get-PublicationTarget
 Export-ModuleMember Get-PublicationTargets
+Export-ModuleMember New-Item
 Export-ModuleMember New-Publication
 Export-ModuleMember Test-Item
+Export-ModuleMember Remove-Item
