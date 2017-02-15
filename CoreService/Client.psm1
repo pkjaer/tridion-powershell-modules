@@ -46,8 +46,8 @@ Function Get-CoreServiceBinding
 		"BASIC"
 		{
 			$binding = New-Object System.ServiceModel.BasicHttpBinding;
-			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Message;
-			$binding.Security.Transport.ClientCredentialType = "Basic";
+			$binding.Security.Mode = [System.ServiceModel.BasicHttpSecurityMode]::TransportCredentialOnly;
+			$binding.Security.Transport.ClientCredentialType = "Windows";
 		}
 		"BASIC-SSL"
 		{
