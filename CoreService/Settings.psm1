@@ -46,6 +46,7 @@ Function Get-DefaultSettings
 		"ConnectionSendTimeout" = "00:01:00";
 		"HostName" = "localhost";
 		"UserName" = ([Environment]::UserDomainName + "\" + [Environment]::UserName);
+        "Password" = "";
 		"Version" = "2011-SP1";
 		"ConnectionType" = "Default";
 		"ModuleVersion" = $moduleVersion;
@@ -182,6 +183,9 @@ Function Set-CoreServiceSettings
 		
 		[Parameter()]
 		[string]$UserName,
+
+		[Parameter()]
+		[string]$Password,
 		
 		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp')]
 		[Parameter()]
@@ -198,6 +202,7 @@ Function Set-CoreServiceSettings
     {
 		$hostNameSpecified = (![string]::IsNullOrEmpty($HostName));
 		$userNameSpecified = (![string]::IsNullOrEmpty($UserName));
+        $passwordSpecified = (![string]::IsNullOrEmpty($Password));
 		$versionSpecified = (![string]::IsNullOrEmpty($Version));
 		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
 		$connectionSendTimeoutSpecified = (![string]::IsNullOrEmpty($ConnectionSendTimeout));
