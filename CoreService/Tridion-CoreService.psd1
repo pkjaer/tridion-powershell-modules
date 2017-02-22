@@ -63,7 +63,7 @@ TypesToProcess = @()
 FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in ModuleToProcess
-NestedModules = @("Client", "Items", "Settings", "Trustees", "AppData")
+NestedModules = @("AppData", "Client", "Items", "Publishing", "Settings", "Trustees")
 
 # Functions to export from this module
 FunctionsToExport = '*'
@@ -81,7 +81,7 @@ AliasesToExport = '*'
 ModuleList = @()
 
 # List of all files packaged with this module
-FileList = @("AppData.psm1", "Client.psm1", "Items.psm1", "Settings.psm1", "Trustees.psm1")
+FileList = @("AppData.psm1", "Client.psm1", "Items.psm1", "Publishing.psm1", "Settings.psm1", "Trustees.psm1")
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
