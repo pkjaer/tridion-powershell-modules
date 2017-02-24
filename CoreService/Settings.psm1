@@ -212,8 +212,13 @@ Function Set-CoreServiceSettings
 		if ($connectionSendTimeoutSpecified) { $settings.ConnectionSendTimeout = $ConnectionSendTimeout; }
 		if ($hostNameSpecified) { $settings.HostName = $HostName; }
 		if ($userNameSpecified) { $settings.UserName = $UserName; }
-        if ($passwordSpecified) { $settings.Password = $Password; }
 		if ($versionSpecified) { $settings.Version = $Version; }
+
+		if ($passwordSpecified) 
+		{ 
+			$securePassword = $Password | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString;
+			$settings.Password = $securePassword; 
+		}
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
 		{

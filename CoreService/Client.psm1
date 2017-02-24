@@ -137,8 +137,7 @@ Function Get-CoreServiceClient
             if($serviceInfo.Username -and $serviceInfo.Password)
             {
                 Write-Verbose "Using credentials of CoreServiceSettings";
- 			    $proxy.ClientCredentials.Windows.ClientCredential.UserName = $serviceInfo.Username;
- 			    $proxy.ClientCredentials.Windows.ClientCredential.Password = $serviceInfo.Password;
+				$credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $serviceInfo.UserName, ($serviceInfo.Password | ConvertTo-SecureString);
             }
 			
       
