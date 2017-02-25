@@ -46,6 +46,7 @@ Function Get-DefaultSettings
 		"ConnectionSendTimeout" = "00:01:00";
 		"HostName" = "localhost";
 		"UserName" = ([Environment]::UserDomainName + "\" + [Environment]::UserName);
+        "Password" = "";
 		"Version" = "2011-SP1";
 		"ConnectionType" = "Default";
 		"ModuleVersion" = $moduleVersion;
@@ -177,11 +178,14 @@ Function Set-CoreServiceSettings
 		[ValidateNotNullOrEmpty()]
         [string]$HostName,
 		
-		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1')]
+		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1', 'Web-8.5')]
 		[string]$Version,
 		
 		[Parameter()]
 		[string]$UserName,
+
+		[Parameter()]
+		[string]$Password,
 		
 		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp')]
 		[Parameter()]
@@ -198,6 +202,7 @@ Function Set-CoreServiceSettings
     {
 		$hostNameSpecified = (![string]::IsNullOrEmpty($HostName));
 		$userNameSpecified = (![string]::IsNullOrEmpty($UserName));
+        $passwordSpecified = (![string]::IsNullOrEmpty($Password));
 		$versionSpecified = (![string]::IsNullOrEmpty($Version));
 		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
 		$connectionSendTimeoutSpecified = (![string]::IsNullOrEmpty($ConnectionSendTimeout));
@@ -208,6 +213,12 @@ Function Set-CoreServiceSettings
 		if ($hostNameSpecified) { $settings.HostName = $HostName; }
 		if ($userNameSpecified) { $settings.UserName = $UserName; }
 		if ($versionSpecified) { $settings.Version = $Version; }
+
+		if ($passwordSpecified) 
+		{ 
+			$securePassword = $Password | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString;
+			$settings.Password = $securePassword; 
+		}
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
 		{
@@ -248,6 +259,12 @@ Function Set-CoreServiceSettings
 				{
 					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_1.dll';
 					$relativeUrl = if ($netTcp) { "/CoreService/201501/netTcp" } else { "/webservices/CoreService201501.svc/wsHttp" };
+					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
+				}
+				"Web-8.5"
+				{
+					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_5.dll';
+					$relativeUrl = if ($netTcp) { "/CoreService/201603/netTcp" } else { "/webservices/CoreService201603.svc/wsHttp" };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
 			}

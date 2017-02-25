@@ -57,27 +57,6 @@ Function Get-CoreServiceBinding
 	return $binding;
 }
 
-Function Get-LoadedCoreServiceClientVersion
-{
-        $versionSignatures = @{
-                        "Tridion.ContentManager.CoreService.Client, Version=6.1.0.996, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2011-SP1"
-                        "Tridion.ContentManager.CoreService.Client, Version=7.0.0.2013, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2013"
-						"Tridion.ContentManager.CoreService.Client, Version=7.1.0.1245, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2013-SP1-PRE"
-                        "Tridion.ContentManager.CoreService.Client, Version=7.1.0.1290, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2013-SP1"
-						"Tridion.ContentManager.CoreService.Client, Version=8.1.0.1287, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="Web-8.1"
-                        }
-
-        foreach ($assembly in [appdomain]::CurrentDomain.GetAssemblies()) 
-		{
-            if ($versionSignatures.ContainsKey($assembly.FullName))
-			{
-                return $versionSignatures[$assembly.FullName]
-            }
-        }
-		
-		return $null;
-}
-
 
 <#
 **************************************************
@@ -137,13 +116,6 @@ Function Get-CoreServiceClient
         # Load information about the Core Service client available on this system
         $serviceInfo = Get-CoreServiceSettings
         
-		$loadedClientVersion = Get-LoadedCoreServiceClientVersion
-        if ($loadedClientVersion -ne $null -and $loadedClientVersion -ne $serviceInfo.Version) 
-        {
-			$newVersion = $serviceInfo.Version
-            throw "You can only load one version of the Core Service client at a time. You have previously loaded the $loadedClientVersion version in this PowerShell session. Create a new session to start using the $newVersion version.";
-        }
-	
         Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.HostName);
         
         # Load the Core Service Client
@@ -153,20 +125,23 @@ Function Get-CoreServiceClient
 		#Load the assembly without locking the file
 		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
 		if (!$assemblyBytes) { throw "Unable to load the assembly at: " + $serviceInfo.AssemblyPath; }
-        [Reflection.Assembly]::Load($assemblyBytes) | Out-Null;            
+        $assembly = [Reflection.Assembly]::Load($assemblyBytes);
+		$instanceType = $assembly.GetType($serviceInfo.ClassName, $true, $true);
     }
     
     Process
     {
         try
         {
-			$proxy = New-Object $serviceInfo.ClassName -ArgumentList $binding, $endpoint;
-
-			if ($ImpersonateUserName)
-			{
-				Write-Verbose "Impersonating '$ImpersonateUserName'...";
-				$proxy.Impersonate($ImpersonateUserName) | Out-Null;
-			}
+			$proxy = [Activator]::CreateInstance($instanceType.FullName, $binding, $endpoint);
+            if($serviceInfo.Username -and $serviceInfo.Password)
+            {
+                Write-Verbose "Using credentials of CoreServiceSettings";
+				$credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $serviceInfo.UserName, ($serviceInfo.Password | ConvertTo-SecureString);
+ 			    $proxy.ClientCredentials.Windows.ClientCredential = $credential;
+            }
+			
+      
 			
             return $proxy;
         }

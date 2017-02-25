@@ -313,7 +313,7 @@ function Test-Item
     [CmdletBinding()]
     Param
     (
-		# The TCM URI of the user to load. If omitted, data for the current user is loaded instead.
+		# The TCM URI of the item you wish to know exists. 
         [Parameter(ValueFromPipelineByPropertyName=$true)]
 		[ValidateNotNullOrEmpty()]
         [string]$Id
@@ -335,6 +335,80 @@ function Test-Item
 	}
 }
 
+function New-Publication
+{
+    <#
+    .Synopsis
+    Creates a new Publication.
+	
+    .Inputs
+    None.
+
+    .Outputs
+    Returns the newly created Publication.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    New-TridionPublication -Title 'My new Publication'
+    Creates a new Publication with the title "My new Publication".
+    
+    .Example
+    New-TridionPublication -Title 'My new Publication' -Parents @('tcm:0-5-1', 'tcm:0-6-1')
+    Creates a new Publication with the title "My new Publication" as a child of two existing Publications.
+    
+    #>
+    [CmdletBinding()]
+    Param
+    (
+		# The title of the new Publication
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Title,
+		
+		# ID(s) of the parent Publication(s)
+		[Parameter(ValueFromPipelineByPropertyName=$true)]
+		[string[]]$Parents
+    )
+	
+	Begin
+	{
+		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
+    Process
+    {
+		$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+		$publication = $client.GetDefaultData(1, $null, $readOptions);
+		
+		if ($Title)
+		{
+			$publication.Title = $Title;
+		}		
+		
+		if ($Parents -ne $null)
+		{
+			$parentLinks = @();
+			foreach($parent in $Parents)
+			{
+				$parentLink = New-Object Tridion.ContentManager.CoreService.Client.LinkToRepositoryData;
+				$parentLink.IdRef = $parent;
+				$parentLinks += $parentLink;
+			}
+			$publication.Parents = $parentLinks;
+		}
+		
+        $result = $client.Save($publication, $readOptions);
+		return $result;
+    }
+	
+	End
+	{
+		Close-CoreServiceClient $client;
+	}
+}
 
 <#
 **************************************************
@@ -345,4 +419,5 @@ Export-ModuleMember Get-Item
 Export-ModuleMember Get-Publications
 Export-ModuleMember Get-PublicationTarget
 Export-ModuleMember Get-PublicationTargets
+Export-ModuleMember New-Publication
 Export-ModuleMember Test-Item
