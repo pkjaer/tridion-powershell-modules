@@ -123,6 +123,7 @@ Function Get-CoreServiceClient
         $binding = Get-CoreServiceBinding;
 		
 		#Load the assembly without locking the file
+        Write-Verbose ("Loading assembly {0}" -f $serviceInfo.AssemblyPath) 
 		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
 		if (!$assemblyBytes) { throw "Unable to load the assembly at: " + $serviceInfo.AssemblyPath; }
         $assembly = [Reflection.Assembly]::Load($assemblyBytes);
@@ -133,7 +134,14 @@ Function Get-CoreServiceClient
     {
         try
         {
-			$proxy = [Activator]::CreateInstance($instanceType, $binding, $endpoint);
+            $proxy = [Activator]::CreateInstance($instanceType.FullName, $binding, $endpoint);
+            if($serviceInfo.Username -and $serviceInfo.Password)
+            {
+                Write-Verbose "Using credentials of CoreServiceSettings";
+                
+				$proxy.ClientCredentials.Windows.ClientCredential.UserName = $serviceInfo.Username;
+				$proxy.ClientCredentials.Windows.ClientCredential.Password = $serviceInfo.Password;
+            }
 
 			if ($ImpersonateUserName)
 			{
