@@ -104,7 +104,7 @@ Function Get-CoreServiceClient
     Param(
 		# The name (including domain) of the user to impersonate when accessing Tridion. 
 		# When omitted the current user will be executing all Tridion commands.
-        [Parameter(ValueFromPipeline=$true)]
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ImpersonateUserName
 	)
 
@@ -133,7 +133,13 @@ Function Get-CoreServiceClient
     {
         try
         {
-			$proxy = [Activator]::CreateInstance($instanceType, $binding, $endpoint);
+			$proxy = [Activator]::CreateInstance($instanceType.FullName, $binding, $endpoint);
+			if ($serviceInfo.Credential)
+			{
+				$userName = $serviceInfo.Credential.UserName;
+				Write-Verbose "Connecting as $userName..."
+				$proxy.ClientCredentials.Windows.ClientCredential = [System.Net.NetworkCredential]$serviceInfo.Credential;
+			}
 
 			if ($ImpersonateUserName)
 			{

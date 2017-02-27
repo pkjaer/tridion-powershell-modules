@@ -25,6 +25,15 @@ Function Add-SettingIfMissing($Object, $Name, $Value)
 	}
 }
 
+Function Remove-SettingIfPresent($Object, $Name)
+{
+	if (Has-Property -Object $Object -Name $Name)
+	{
+		$Object.PSObject.Properties.Remove($Name);
+		Write-Warning "The setting '$name' is no longer used and has been removed.";
+	}
+}
+
 Function New-ObjectWithProperties([Hashtable]$properties)
 {
 	$result = New-Object -TypeName System.Object;
@@ -45,7 +54,7 @@ Function Get-DefaultSettings
 		"EndpointUrl" = "http://localhost/webservices/CoreService2011.svc/wsHttp";
 		"ConnectionSendTimeout" = "00:01:00";
 		"HostName" = "localhost";
-		"UserName" = ([Environment]::UserDomainName + "\" + [Environment]::UserName);
+		"Credential" = ([PSCredential]$null);
 		"Version" = "2011-SP1";
 		"ConnectionType" = "Default";
 		"ModuleVersion" = $moduleVersion;
@@ -83,6 +92,8 @@ Function Convert-OldSettings($settings)
 	{
 		Write-Verbose "Upgrading your settings..."
 		Add-SettingIfMissing -Object $settings -Name 'ConnectionSendTimeout' -Value '00:01:00';
+		Add-SettingIfMissing -Object $settings -Name 'Credential' -Value ([PSCredential]$null);
+		Remove-SettingIfPresent -Object $settings -Name 'UserName';
 		$settings.ModuleVersion = $moduleVersion;
 		Save-Settings $settings;
 	}
@@ -169,6 +180,9 @@ Function Set-CoreServiceSettings
     Set-TridionCoreServiceSettings -HostName "machine.domain" -Version "2013-SP1" -ConnectionType netTcp
 	Makes the module connect to a Core Service hosted on "machine.domain", using netTcp bindings and the 2013 SP1 version of the service.
 	
+    .Example
+    Set-TridionCoreServiceSettings -Credential (Get-Credential)
+	Prompts for a username and password to use when connecting to Tridion.
     #>
     [CmdletBinding()]
     Param
@@ -181,7 +195,7 @@ Function Set-CoreServiceSettings
 		[string]$Version,
 		
 		[Parameter()]
-		[string]$UserName,
+		[PSCredential]$Credential,
 		
 		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp')]
 		[Parameter()]
@@ -197,7 +211,7 @@ Function Set-CoreServiceSettings
     Process
     {
 		$hostNameSpecified = (![string]::IsNullOrEmpty($HostName));
-		$userNameSpecified = (![string]::IsNullOrEmpty($UserName));
+		$credentialSpecified = ($Credential -ne $null);
 		$versionSpecified = (![string]::IsNullOrEmpty($Version));
 		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
 		$connectionSendTimeoutSpecified = (![string]::IsNullOrEmpty($ConnectionSendTimeout));
@@ -206,7 +220,7 @@ Function Set-CoreServiceSettings
 		if ($connectionTypeSpecified) { $settings.ConnectionType = $ConnectionType; }
 		if ($connectionSendTimeoutSpecified) { $settings.ConnectionSendTimeout = $ConnectionSendTimeout; }
 		if ($hostNameSpecified) { $settings.HostName = $HostName; }
-		if ($userNameSpecified) { $settings.UserName = $UserName; }
+		if ($credentialSpecified) { $settings.Credential = $Credential; }
 		if ($versionSpecified) { $settings.Version = $Version; }
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
