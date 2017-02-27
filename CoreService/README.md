@@ -12,9 +12,12 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 v2.3.0.0
 - Changing the Tridion version no longer requires you to start a new PowerShell session.
 - Added functions to Publish and Unpublish items (Publish-TridionItem, Unpublish-TridionItem)
-- Added support for viewing the Publish Queue and removing Publish transactions (Get-TridionPublishTransaction, Remove-TridionPublishTransaction) (Thanks to Albert Romkes)
+- Added a function to reset your settings to the default values (Clear-TridionCoreServiceSettings)
+- Added support for viewing the Publish Queue and removing Publish transactions (Get-TridionPublishTransaction, Remove-TridionPublishTransaction)
 - Added support for creating and deleting Tridion items of any type (New-TridionItem, Remove-TridionItem)
-- Added support for Web 8.5 (Thank you, Nuno Linhares)
+- Added support for Web 8.5
+
+Special thanks to Albert Romkes, Jan Horsman, and Nuno Linhares for their contributions to this version.
 
 
 v2.2.0.0
