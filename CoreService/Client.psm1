@@ -133,13 +133,15 @@ Function Get-CoreServiceClient
     {
         try
         {
-			$proxy = [Activator]::CreateInstance($instanceType, $binding, $endpoint);
-
-			if ($ImpersonateUserName)
-			{
-				Write-Verbose "Impersonating '$ImpersonateUserName'...";
-				$proxy.Impersonate($ImpersonateUserName) | Out-Null;
-			}
+			$proxy = [Activator]::CreateInstance($instanceType.FullName, $binding, $endpoint);
+            if($serviceInfo.Username -and $serviceInfo.Password)
+            {
+                Write-Verbose "Using credentials of CoreServiceSettings";
+				$credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $serviceInfo.UserName, ($serviceInfo.Password | ConvertTo-SecureString);
+ 			    $proxy.ClientCredentials.Windows.ClientCredential = $credential;
+            }
+			
+      
 			
             return $proxy;
         }
