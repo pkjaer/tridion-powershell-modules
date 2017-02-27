@@ -17,7 +17,6 @@ v2.3.0.0
 - Added support for viewing the Publish Queue and removing Publish transactions (Get-TridionPublishTransaction, Remove-TridionPublishTransaction)
 - Added support for creating and deleting Tridion items of any type (New-TridionItem, Remove-TridionItem)
 - Added support for Web 8.5 (e.g. "Set-TridionCoreServiceSettings -Version Web-8.5")
-- Changing the Tridion version no longer requires you to start a new PowerShell session.
 
 Special thanks to Albert Romkes, Jan Horsman, and Nuno Linhares for their contributions to this version.
 
