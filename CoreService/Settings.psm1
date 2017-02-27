@@ -210,17 +210,19 @@ Function Set-CoreServiceSettings
 
     Process
     {
-		$hostNameSpecified = (![string]::IsNullOrEmpty($HostName));
-		$credentialSpecified = ($Credential -ne $null);
-		$versionSpecified = (![string]::IsNullOrEmpty($Version));
-		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
-		$connectionSendTimeoutSpecified = (![string]::IsNullOrEmpty($ConnectionSendTimeout));
+		$parametersSpecified = $MyInvocation.BoundParameters.Keys;
+	
+		$connectionTypeSpecified = ($parametersSpecified -contains 'ConnectionType');
+		$connectionSendTimeoutSpecified = ($parametersSpecified -contains 'ConnectionSendTimeout');
+		$credentialSpecified = ($parametersSpecified -contains 'Credential');
+		$hostNameSpecified = ($parametersSpecified -contains 'HostName');
+		$versionSpecified = ($parametersSpecified -contains 'Version');
 		
 		$settings = Get-Settings;
 		if ($connectionTypeSpecified) { $settings.ConnectionType = $ConnectionType; }
 		if ($connectionSendTimeoutSpecified) { $settings.ConnectionSendTimeout = $ConnectionSendTimeout; }
-		if ($hostNameSpecified) { $settings.HostName = $HostName; }
 		if ($credentialSpecified) { $settings.Credential = $Credential; }
+		if ($hostNameSpecified) { $settings.HostName = $HostName; }
 		if ($versionSpecified) { $settings.Version = $Version; }
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
