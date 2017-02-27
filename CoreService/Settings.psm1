@@ -123,7 +123,7 @@ Function Save-Settings($settings)
 				New-Item -Path $settingsDir -ItemType Container | Out-Null
 			}
 			
-			Export-Clixml -Path $settingsFile -InputObject $settings;
+			Export-Clixml -Path $settingsFile -InputObject $settings -Confirm:$false -Force;
 			$script:Settings = $settings;
 		}
 		catch
@@ -266,6 +266,26 @@ Function Set-CoreServiceSettings
     }
 }
 
+Function Clear-CoreServiceSettings
+{
+    <#
+    .Synopsis
+    Resets the Core Service settings to the default values.
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+	#>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    Param()
+	
+	Process {
+        $settings = Get-DefaultSettings
+		if ($PSCmdlet.ShouldProcess('CoreServiceSettings.xml'))
+		{
+			Save-Settings $settings
+		}        
+    }
+}
 
 <#
 **************************************************
@@ -274,3 +294,4 @@ Function Set-CoreServiceSettings
 #>
 Export-ModuleMember Get-CoreServiceSettings;
 Export-ModuleMember Set-CoreServiceSettings;
+Export-ModuleMember Clear-CoreServiceSettings;
