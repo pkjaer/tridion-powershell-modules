@@ -25,6 +25,15 @@ Function Add-SettingIfMissing($Object, $Name, $Value)
 	}
 }
 
+Function Remove-SettingIfPresent($Object, $Name)
+{
+	if (Has-Property -Object $Object -Name $Name)
+	{
+		$Object.PSObject.Properties.Remove($Name);
+		Write-Warning "The setting '$name' is no longer used and has been removed.";
+	}
+}
+
 Function New-ObjectWithProperties([Hashtable]$properties)
 {
 	$result = New-Object -TypeName System.Object;
@@ -45,7 +54,7 @@ Function Get-DefaultSettings
 		"EndpointUrl" = "http://localhost/webservices/CoreService2011.svc/wsHttp";
 		"ConnectionSendTimeout" = "00:01:00";
 		"HostName" = "localhost";
-		"UserName" = ([Environment]::UserDomainName + "\" + [Environment]::UserName);
+		"Credential" = ([PSCredential]$null);
 		"Version" = "2011-SP1";
 		"ConnectionType" = "Default";
 		"ModuleVersion" = $moduleVersion;
@@ -83,6 +92,8 @@ Function Convert-OldSettings($settings)
 	{
 		Write-Verbose "Upgrading your settings..."
 		Add-SettingIfMissing -Object $settings -Name 'ConnectionSendTimeout' -Value '00:01:00';
+		Add-SettingIfMissing -Object $settings -Name 'Credential' -Value ([PSCredential]$null);
+		Remove-SettingIfPresent -Object $settings -Name 'UserName';
 		$settings.ModuleVersion = $moduleVersion;
 		Save-Settings $settings;
 	}
@@ -123,7 +134,7 @@ Function Save-Settings($settings)
 				New-Item -Path $settingsDir -ItemType Container | Out-Null
 			}
 			
-			Export-Clixml -Path $settingsFile -InputObject $settings;
+			Export-Clixml -Path $settingsFile -InputObject $settings -Confirm:$false -Force;
 			$script:Settings = $settings;
 		}
 		catch
@@ -169,6 +180,9 @@ Function Set-CoreServiceSettings
     Set-TridionCoreServiceSettings -HostName "machine.domain" -Version "2013-SP1" -ConnectionType netTcp
 	Makes the module connect to a Core Service hosted on "machine.domain", using netTcp bindings and the 2013 SP1 version of the service.
 	
+    .Example
+    Set-TridionCoreServiceSettings -Credential (Get-Credential)
+	Prompts for a username and password to use when connecting to Tridion.
     #>
     [CmdletBinding()]
     Param
@@ -177,11 +191,11 @@ Function Set-CoreServiceSettings
 		[ValidateNotNullOrEmpty()]
         [string]$HostName,
 		
-		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1')]
+		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1', 'Web-8.5')]
 		[string]$Version,
 		
 		[Parameter()]
-		[string]$UserName,
+		[PSCredential]$Credential,
 		
 		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp')]
 		[Parameter()]
@@ -196,17 +210,19 @@ Function Set-CoreServiceSettings
 
     Process
     {
-		$hostNameSpecified = (![string]::IsNullOrEmpty($HostName));
-		$userNameSpecified = (![string]::IsNullOrEmpty($UserName));
-		$versionSpecified = (![string]::IsNullOrEmpty($Version));
-		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
-		$connectionSendTimeoutSpecified = (![string]::IsNullOrEmpty($ConnectionSendTimeout));
+		$parametersSpecified = $MyInvocation.BoundParameters.Keys;
+	
+		$connectionTypeSpecified = ($parametersSpecified -contains 'ConnectionType');
+		$connectionSendTimeoutSpecified = ($parametersSpecified -contains 'ConnectionSendTimeout');
+		$credentialSpecified = ($parametersSpecified -contains 'Credential');
+		$hostNameSpecified = ($parametersSpecified -contains 'HostName');
+		$versionSpecified = ($parametersSpecified -contains 'Version');
 		
 		$settings = Get-Settings;
 		if ($connectionTypeSpecified) { $settings.ConnectionType = $ConnectionType; }
 		if ($connectionSendTimeoutSpecified) { $settings.ConnectionSendTimeout = $ConnectionSendTimeout; }
+		if ($credentialSpecified) { $settings.Credential = $Credential; }
 		if ($hostNameSpecified) { $settings.HostName = $HostName; }
-		if ($userNameSpecified) { $settings.UserName = $UserName; }
 		if ($versionSpecified) { $settings.Version = $Version; }
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
@@ -250,6 +266,12 @@ Function Set-CoreServiceSettings
 					$relativeUrl = if ($netTcp) { "/CoreService/201501/netTcp" } else { "/webservices/CoreService201501.svc/wsHttp" };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
+				"Web-8.5"
+				{
+					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_5.dll';
+					$relativeUrl = if ($netTcp) { "/CoreService/201603/netTcp" } else { "/webservices/CoreService201603.svc/wsHttp" };
+					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
+				}
 			}
 		}
 		
@@ -260,6 +282,26 @@ Function Set-CoreServiceSettings
     }
 }
 
+Function Clear-CoreServiceSettings
+{
+    <#
+    .Synopsis
+    Resets the Core Service settings to the default values.
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+	#>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    Param()
+	
+	Process {
+        $settings = Get-DefaultSettings
+		if ($PSCmdlet.ShouldProcess('CoreServiceSettings.xml'))
+		{
+			Save-Settings $settings
+		}        
+    }
+}
 
 <#
 **************************************************
@@ -268,3 +310,4 @@ Function Set-CoreServiceSettings
 #>
 Export-ModuleMember Get-CoreServiceSettings;
 Export-ModuleMember Set-CoreServiceSettings;
+Export-ModuleMember Clear-CoreServiceSettings;

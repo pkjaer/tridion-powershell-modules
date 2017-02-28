@@ -52,30 +52,9 @@ Function Get-CoreServiceBinding
 	}
 	
 	$binding.SendTimeout = $settings.ConnectionSendTimeout;
-	$binding.MaxReceivedMessageSize = 10485760;
+	$binding.MaxReceivedMessageSize = [int]::MaxValue;
 	$binding.ReaderQuotas = $quotas;
 	return $binding;
-}
-
-Function Get-LoadedCoreServiceClientVersion
-{
-        $versionSignatures = @{
-                        "Tridion.ContentManager.CoreService.Client, Version=6.1.0.996, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2011-SP1"
-                        "Tridion.ContentManager.CoreService.Client, Version=7.0.0.2013, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2013"
-						"Tridion.ContentManager.CoreService.Client, Version=7.1.0.1245, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2013-SP1-PRE"
-                        "Tridion.ContentManager.CoreService.Client, Version=7.1.0.1290, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="2013-SP1"
-						"Tridion.ContentManager.CoreService.Client, Version=8.1.0.1287, Culture=neutral, PublicKeyToken=ddfc895746e5ee6b"="Web-8.1"
-                        }
-
-        foreach ($assembly in [appdomain]::CurrentDomain.GetAssemblies()) 
-		{
-            if ($versionSignatures.ContainsKey($assembly.FullName))
-			{
-                return $versionSignatures[$assembly.FullName]
-            }
-        }
-		
-		return $null;
 }
 
 
@@ -125,7 +104,7 @@ Function Get-CoreServiceClient
     Param(
 		# The name (including domain) of the user to impersonate when accessing Tridion. 
 		# When omitted the current user will be executing all Tridion commands.
-        [Parameter(ValueFromPipeline=$true)]
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ImpersonateUserName
 	)
 
@@ -137,13 +116,6 @@ Function Get-CoreServiceClient
         # Load information about the Core Service client available on this system
         $serviceInfo = Get-CoreServiceSettings
         
-		$loadedClientVersion = Get-LoadedCoreServiceClientVersion
-        if ($loadedClientVersion -ne $null -and $loadedClientVersion -ne $serviceInfo.Version) 
-        {
-			$newVersion = $serviceInfo.Version
-            throw "You can only load one version of the Core Service client at a time. You have previously loaded the $loadedClientVersion version in this PowerShell session. Create a new session to start using the $newVersion version.";
-        }
-	
         Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.HostName);
         
         # Load the Core Service Client
@@ -153,14 +125,21 @@ Function Get-CoreServiceClient
 		#Load the assembly without locking the file
 		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
 		if (!$assemblyBytes) { throw "Unable to load the assembly at: " + $serviceInfo.AssemblyPath; }
-        [Reflection.Assembly]::Load($assemblyBytes) | Out-Null;            
+        $assembly = [Reflection.Assembly]::Load($assemblyBytes);
+		$instanceType = $assembly.GetType($serviceInfo.ClassName, $true, $true);
     }
     
     Process
     {
         try
         {
-			$proxy = New-Object $serviceInfo.ClassName -ArgumentList $binding, $endpoint;
+			$proxy = [Activator]::CreateInstance($instanceType.FullName, $binding, $endpoint);
+			if ($serviceInfo.Credential)
+			{
+				$userName = $serviceInfo.Credential.UserName;
+				Write-Verbose "Connecting as $userName..."
+				$proxy.ClientCredentials.Windows.ClientCredential = [System.Net.NetworkCredential]$serviceInfo.Credential;
+			}
 
 			if ($ImpersonateUserName)
 			{

@@ -9,6 +9,18 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 ### Release notes
 
+v2.3.0.0
+- Added functions to Publish and Unpublish items (Publish-TridionItem, Unpublish-TridionItem)
+- You may now run the module as a different user by specifying the Credential setting (e.g. "Set-TridionCoreServiceSettings -Credential (Get-Credential)")
+   NOTE: The username and password are encrypted and are safe to store using the -Persist parameter.
+- Added a function to reset your settings to the default values (Clear-TridionCoreServiceSettings)
+- Added support for viewing the Publish Queue and removing Publish transactions (Get-TridionPublishTransaction, Remove-TridionPublishTransaction)
+- Added support for creating and deleting Tridion items of any type (New-TridionItem, Remove-TridionItem)
+- Added support for Web 8.5 (e.g. "Set-TridionCoreServiceSettings -Version Web-8.5")
+
+Special thanks to Albert Romkes, Jan Horsman, and Nuno Linhares for their contributions to this version.
+
+
 v2.2.0.0
 
 - Added these release notes.

@@ -3,8 +3,10 @@
 # Do not continue if there's an error
 $ErrorActionPreference = 'Stop';
 
+$branch = 'develop';
+
 # Base URL to download the latest version from the internet
-$baseDownloadUrl = 'https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/master/CoreService';
+$baseDownloadUrl = "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/CoreService";
 
 # List of all the files to install
 $directories = @("Clients", "Installation");
@@ -13,81 +15,20 @@ $files = @(
 	'Clients/Tridion.ContentManager.CoreService.Client.2013.dll', 
 	'Clients/Tridion.ContentManager.CoreService.Client.2013sp1.dll',
 	'Clients/Tridion.ContentManager.CoreService.Client.Web_8_1.dll',
-	'Installation/Install.ps1',
+    'Clients/Tridion.ContentManager.CoreService.Client.Web_8_5.dll',
 	'Installation/Verify.ps1',
 	'AppData.psm1', 
 	'Client.psm1', 
 	'Items.psm1', 
+	'Publishing.psm1', 
 	'Settings.psm1', 
 	'Tridion-CoreService.psd1', 
 	'Trustees.psm1'
 );
 
-	
-function EnsureDirectoriesExist
-{
-	# Locate the user's module directory
-    $modulePaths = @($env:PSModulePath -split ';');
-	$expectedPath = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath WindowsPowerShell\Modules;
-	$destination = $modulePaths | Where-Object { $_ -eq $expectedPath } | Select -First 1;
-	
-	if (-not $destination) 
-	{
-		$destination = $modulePaths | Select-Object -Index 0;
-	}
 
-	# Create the module folders
-	$baseDir = (Join-Path -Path $destination -ChildPath 'Tridion-CoreService');
-	
-	foreach($dir in $directories)
-	{
-		$path = Join-Path $baseDir $dir;
-		New-Item -Path $path -ItemType Directory -Force | Out-Null;
-		if (!(Test-Path $path))
-		{
-			throw "Failed to create module directory: $path";
-		}
-	}
-	
-	return $baseDir;
-}
+# Download the installation script
+wget "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/Shared/Installation/Install-ModuleFromWeb.ps1" | iex
 
-function Completed
-{
-	# Load the new module and report success
-	if (Get-Module Tridion-CoreService)
-	{
-		Remove-Module -Force Tridion-CoreService | Out-Null;
-	}
-	Import-Module Tridion-CoreService | Out-Null;
-	$version = (Get-Module Tridion-CoreService).Version.ToString();
-	Write-Host "The Tridion-CoreService PowerShell module (version $version) has been installed and loaded." -Foreground Green;
-}
-
-function ReplaceSlashes([string]$file)
-{
-	return $file.Replace('/', '\');
-}
-
-function DownloadAndInstall 
-{
-	$baseDir = EnsureDirectoriesExist;
-	$max = $files.Count;
-	$idx = 0;
-	
-	# Download all of the files
-    Write-Host "Downloading Tridion-CoreService PowerShell module ($max files)...";
-    $net = (New-Object Net.WebClient);
-    $net.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;
-
-	foreach ($file in $files)
-	{
-		$destination = ReplaceSlashes((Join-Path $baseDir $file));
-		$net.DownloadFile("$baseDownloadUrl/$file", $destination);
-		Write-Progress -Activity "Downloading module files" -Status "$file" -PercentComplete ((++$idx / $max) * 100);
-	}
-
-	Completed;
-}
-
-DownloadAndInstall;
+# Install the above files and directories
+Install-ModuleFromWeb -ModuleName "Tridion-CoreService" -BaseUrl $baseDownloadUrl -Files $files -Directories $directories;

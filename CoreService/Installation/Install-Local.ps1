@@ -10,11 +10,13 @@ $files = @(
 	'Clients/Tridion.ContentManager.CoreService.Client.2013.dll', 
 	'Clients/Tridion.ContentManager.CoreService.Client.2013sp1.dll',
 	'Clients/Tridion.ContentManager.CoreService.Client.Web_8_1.dll',
+    'Clients/Tridion.ContentManager.CoreService.Client.Web_8_5.dll',
 	'Installation/Install.ps1',
 	'Installation/Verify.ps1',
 	'AppData.psm1', 
 	'Client.psm1', 
 	'Items.psm1', 
+	'Publishing.psm1', 
 	'Settings.psm1', 
 	'Tridion-CoreService.psd1', 
 	'Trustees.psm1'
@@ -39,7 +41,10 @@ function EnsureDirectoriesExist
 	foreach($dir in $directories)
 	{
 		$path = Join-Path $baseDir $dir;
-		New-Item -Path $path -ItemType Directory -Force | Out-Null;
+		
+		#Note: Using the full name of the New-Item cmdlet here because the New-TridionItem function conflicts with it within this module.
+		Microsoft.PowerShell.Management\New-Item -Path $path -ItemType Directory -Force | Out-Null;
+		
 		if (!(Test-Path $path))
 		{
 			throw "Failed to create module directory: $path";
