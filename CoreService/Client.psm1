@@ -8,7 +8,7 @@
 
 Function Get-CoreServiceBinding
 {
-	$settings = Get-CoreServiceSettings
+	$settings = Get-TridionCoreServiceSettings
 
 	$quotas = New-Object System.Xml.XmlDictionaryReaderQuotas;
 	$quotas.MaxStringContentLength = 10485760;
@@ -63,7 +63,7 @@ Function Get-CoreServiceBinding
 * Public members
 **************************************************
 #>
-Function Get-CoreServiceClient
+Function Get-TridionCoreServiceClient
 {
     <#
     .Synopsis
@@ -114,7 +114,7 @@ Function Get-CoreServiceClient
         Add-Type -AssemblyName System.ServiceModel
 
         # Load information about the Core Service client available on this system
-        $serviceInfo = Get-CoreServiceSettings
+        $serviceInfo = Get-TridionCoreServiceSettings
         
         Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.HostName);
         
@@ -157,7 +157,7 @@ Function Get-CoreServiceClient
     }
 }
 
-Function Close-CoreServiceClient
+Function Close-TridionCoreServiceClient
 {
     <#
     .Synopsis
@@ -219,5 +219,5 @@ Function Close-CoreServiceClient
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-CoreServiceClient
-Export-ModuleMember Close-CoreServiceClient
+Export-ModuleMember Get-TridionCoreServiceClient
+Export-ModuleMember Close-TridionCoreServiceClient

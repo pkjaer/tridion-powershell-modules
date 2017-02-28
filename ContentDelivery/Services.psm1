@@ -31,7 +31,7 @@ Function New-ObjectWithProperties([Hashtable]$properties)
 **************************************************
 #>
 
-function Get-ContentDeliveryToken
+function Get-TridionContentDeliveryToken
 {
     <#
     .Synopsis
@@ -102,7 +102,7 @@ function Get-ContentDeliveryToken
 	}
 }
 
-function Test-ContentDeliveryServices
+function Test-TridionContentDeliveryServices
 {
     <#
     .Synopsis
@@ -251,5 +251,5 @@ function Test-ContentDeliveryServices
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-ContentDeliveryToken
-Export-ModuleMember Test-ContentDeliveryServices
+Export-ModuleMember Get-TridionContentDeliveryToken
+Export-ModuleMember Test-TridionContentDeliveryServices

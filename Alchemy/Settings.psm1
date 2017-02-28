@@ -116,7 +116,7 @@ Function Save-Settings($settings)
 **************************************************
 #>
 
-Function Get-ConnectionSettings
+Function Get-AlchemyConnectionSettings
 {
     <#
     .Synopsis
@@ -132,7 +132,7 @@ Function Get-ConnectionSettings
 	Process { return Get-Settings; }
 }
 
-Function Set-ConnectionSettings
+Function Set-AlchemyConnectionSettings
 {
     <#
     .Synopsis
@@ -185,5 +185,5 @@ Function Set-ConnectionSettings
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-ConnectionSettings;
-Export-ModuleMember Set-ConnectionSettings;
+Export-ModuleMember Get-AlchemyConnectionSettings;
+Export-ModuleMember Set-AlchemyConnectionSettings;

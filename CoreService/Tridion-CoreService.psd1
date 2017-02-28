@@ -85,7 +85,5 @@ FileList = @("AppData.psm1", "Client.psm1", "Items.psm1", "Publishing.psm1", "Se
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
-
-DefaultCommandPrefix = 'Tridion'
 }
 

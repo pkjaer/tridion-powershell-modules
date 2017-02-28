@@ -72,7 +72,7 @@ Function GetMonitorJobs($Folder = $null)
 **************************************************
 #>
 
-Function Get-PluginNameFromFile
+Function Get-AlchemyPluginNameFromFile
 {
     [CmdletBinding()]
     Param(
@@ -117,14 +117,14 @@ Function Get-PluginNameFromFile
 	}
 }
 
-Function Get-Plugins
+Function Get-AlchemyPlugins
 {
     [CmdletBinding()]
     Param()
 	
 	Process
 	{
-		$settings = Get-ConnectionSettings;
+		$settings = Get-AlchemyConnectionSettings;
 		$client = GetClient -Credentials $settings.Credentials;
 		$server = NormalizeServerUrl $settings.Host;
 		
@@ -140,7 +140,7 @@ Function Get-Plugins
 	}
 }
 
-Function Install-Plugin
+Function Install-AlchemyPlugin
 {
     [CmdletBinding()]
     Param(
@@ -154,14 +154,14 @@ Function Install-Plugin
 	Process
 	{
 		$verboseRequested = ($PSBoundParameters['Verbose'] -eq $true);
-		$settings = Get-ConnectionSettings;
+		$settings = Get-AlchemyConnectionSettings;
 		
-		$name = Get-PluginNameFromFile $File
+		$name = Get-AlchemyPluginNameFromFile $File
 		$nameWithSpaces = $name.Replace('_', ' ');
 
 		if (!$Force)
 		{
-			$installedPlugins = Get-Plugins -Verbose:$verboseRequested | Where { $_.name -eq $nameWithSpaces };
+			$installedPlugins = Get-AlchemyPlugins -Verbose:$verboseRequested | Where { $_.name -eq $nameWithSpaces };
 			if ($installedPlugins.Count -gt 0)
 			{
 				Write-Warning "'$nameWithSpaces' is already installed.";
@@ -180,7 +180,7 @@ Function Install-Plugin
 	}
 }
 
-Function Uninstall-Plugin
+Function Uninstall-AlchemyPlugin
 {
     [CmdletBinding()]
     Param(
@@ -197,19 +197,19 @@ Function Uninstall-Plugin
 	Process
 	{
 		$verboseRequested = ($PSBoundParameters['Verbose'] -eq $true);
-		$settings = Get-ConnectionSettings;
+		$settings = Get-AlchemyConnectionSettings;
 		$name = $Name;
 		
 		if ($File)
 		{
 			Write-Verbose "Reading the plugin name from file...";
-			$name = Get-PluginNameFromFile $File -Verbose:$verboseRequested;
+			$name = Get-AlchemyPluginNameFromFile $File -Verbose:$verboseRequested;
 		}
 		$nameWithSpaces = $name.Replace('_', ' ');
 
 		if (!$Force)
 		{
-			$installedPlugins = Get-Plugins -Verbose:$verboseRequested | Where { $_.name -eq $nameWithSpaces };
+			$installedPlugins = Get-AlchemyPlugins -Verbose:$verboseRequested | Where { $_.name -eq $nameWithSpaces };
 			if ($installedPlugins.Count -lt 1)
 			{
 				Write-Verbose "'$nameWithSpaces' is not currently installed.";
@@ -227,7 +227,7 @@ Function Uninstall-Plugin
 	}
 }
 
-Function Update-Plugin
+Function Update-AlchemyPlugin
 {
     [CmdletBinding()]
     Param(
@@ -245,9 +245,9 @@ Function Update-Plugin
 		try
 		{
 			Write-Progress -Activity "Updating plugin" -Status "Uninstalling $File" -PercentComplete 10;
-			Uninstall-Plugin -File $File -Verbose:$verboseRequested -Force:$Force
+			Uninstall-AlchemyPlugin -File $File -Verbose:$verboseRequested -Force:$Force
 			Write-Progress -Activity "Updating plugin" -Status "Uninstalling $File" -PercentComplete 50;
-			Install-Plugin -File $File -Verbose:$verboseRequested -Force:$Force
+			Install-AlchemyPlugin -File $File -Verbose:$verboseRequested -Force:$Force
 			Write-Progress -Activity "Updating plugin" -Status "Done updating $File" -PercentComplete 10 -Completed;
 		}
 		catch
@@ -258,7 +258,7 @@ Function Update-Plugin
 }
 }
 
-Function Start-PluginMonitor
+Function Start-AlchemyPluginMonitor
 {
     [CmdletBinding()]
     Param(
@@ -301,7 +301,7 @@ Function Start-PluginMonitor
 			
 			if ($update)
 			{
-				Update-Plugin -File $fileName -Verbose:$messageData.Verbose -Force:$force
+				Update-AlchemyPlugin -File $fileName -Verbose:$messageData.Verbose -Force:$force
 			}
 		};
 
@@ -311,7 +311,7 @@ Function Start-PluginMonitor
 	}
 }
 
-Function Stop-PluginMonitor
+Function Stop-AlchemyPluginMonitor
 {
     [CmdletBinding()]
     Param()
@@ -338,10 +338,10 @@ Function Stop-PluginMonitor
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-PluginNameFromFile
-Export-ModuleMember Get-Plugins
-Export-ModuleMember Install-Plugin
-Export-ModuleMember Uninstall-Plugin
-Export-ModuleMember Update-Plugin
-Export-ModuleMember Start-PluginMonitor
-Export-ModuleMember Stop-PluginMonitor
+Export-ModuleMember Get-AlchemyPluginNameFromFile
+Export-ModuleMember Get-AlchemyPlugins
+Export-ModuleMember Install-AlchemyPlugin
+Export-ModuleMember Uninstall-AlchemyPlugin
+Export-ModuleMember Update-AlchemyPlugin
+Export-ModuleMember Start-AlchemyPluginMonitor
+Export-ModuleMember Stop-AlchemyPluginMonitor

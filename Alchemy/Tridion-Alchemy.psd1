@@ -85,7 +85,5 @@ FileList = @("Plugins.psm1", "Settings.psm1")
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
-
-DefaultCommandPrefix = 'Alchemy'
 }
 
