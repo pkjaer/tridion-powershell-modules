@@ -18,7 +18,7 @@ $files = @(
 
 	
 # Download the installation script
-wget "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/Shared/Installation/Install-ModuleFromWeb.ps1" | iex
+iwr "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/Shared/Installation/Install-ModuleFromWeb.ps1" | iex
 
 # Install the above files and directories
 Install-ModuleFromWeb -ModuleName "Tridion-ContentDelivery" -BaseUrl $baseDownloadUrl -Files $files -Directories $directories;
