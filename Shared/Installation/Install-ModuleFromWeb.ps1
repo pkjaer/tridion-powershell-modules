@@ -27,7 +27,10 @@ Function EnsureDirectoriesExist([string]$ModuleName, $Directories)
 	foreach($dir in $Directories)
 	{
 		$path = Join-Path $baseDir $dir;
-		New-Item -Path $path -ItemType Directory -Force | Out-Null;
+		
+		#Note: Using the full name of the New-Item cmdlet here because the New-TridionItem function conflicts with it within this module.
+		Microsoft.PowerShell.Management\New-Item -Path $path -ItemType Directory -Force | Out-Null;
+		
 		if (!(Test-Path $path))
 		{
 			throw "Failed to create module directory: $path";
