@@ -12,7 +12,7 @@
 * Public members
 **************************************************
 #>
-function Publish-Item
+function Publish-TridionItem
 {
     <#
     .Synopsis
@@ -72,7 +72,7 @@ function Publish-Item
 	
 	Begin
 	{
-		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -100,11 +100,11 @@ function Publish-Item
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-function Get-PublishTransaction
+function Get-TridionPublishTransaction
 {
     <#
     .Synopsis
@@ -148,7 +148,7 @@ function Get-PublishTransaction
     Returns all Publish Transactions created by user 'domain\name' that were published successfully.
 
     .Example
-    Get-TridionPublishTransaction -Priority Low | Remove-PublishTransactions
+    Get-TridionPublishTransaction -Priority Low | Remove-TridionPublishTransactions
     Removes all Publish Transactions with a low priority.
 
     #>
@@ -187,7 +187,7 @@ function Get-PublishTransaction
 
     Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
     }
 
     Process
@@ -198,7 +198,7 @@ function Get-PublishTransaction
 			{
 				'ById'
 				{
-					return Get-Item $Id;
+					return Get-TridionItem $Id;
 				}
 				
 				'ByFilter'
@@ -263,13 +263,11 @@ function Get-PublishTransaction
 
     End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
-
-
 }
 
-function Remove-PublishTransaction
+function Remove-TridionPublishTransaction
 {
     <#
     .Synopsis
@@ -291,11 +289,11 @@ function Remove-PublishTransaction
     https://github.com/pkjaer/tridion-powershell-modules
 	
     .Example
-    Remove-PublishTransactions tcm:0-4212900-66560
+    Remove-TridionPublishTransactions tcm:0-4212900-66560
     Remove a Publish Transaction with this uri from the Publish Queue
 
     .Example
-    Get-PublishQueueInfo -Priority Low -NoFormatting | select -ExpandProperty Id | Remove-PublishTransactions
+    Get-PublishQueueInfo -Priority Low -NoFormatting | select -ExpandProperty Id | Remove-TridionPublishTransactions
     Remove all Publish Transactions with a low priority
     #>
 
@@ -311,7 +309,7 @@ function Remove-PublishTransaction
 
     Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
     }
     Process
     {
@@ -334,7 +332,7 @@ function Remove-PublishTransaction
 
     End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 
 }
@@ -346,6 +344,6 @@ function Remove-PublishTransaction
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Publish-Item
-Export-ModuleMember Get-PublishTransaction
-Export-ModuleMember Remove-PublishTransaction
+Export-ModuleMember Publish-TridionItem
+Export-ModuleMember Get-TridionPublishTransaction
+Export-ModuleMember Remove-TridionPublishTransaction
