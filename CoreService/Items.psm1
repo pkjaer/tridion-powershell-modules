@@ -12,7 +12,7 @@
 * Public members
 **************************************************
 #>
-function Get-Publications
+function Get-TridionPublications
 {
     <#
     .Synopsis
@@ -58,7 +58,7 @@ function Get-Publications
 	
 	Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -77,11 +77,11 @@ function Get-Publications
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-function Get-PublicationTargets
+function Get-TridionPublicationTargets
 {
     <#
     .Synopsis
@@ -107,7 +107,7 @@ function Get-PublicationTargets
 	
 	Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -122,11 +122,11 @@ function Get-PublicationTargets
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-function Get-PublicationTarget
+function Get-TridionPublicationTarget
 {
     <#
     .Synopsis
@@ -183,7 +183,7 @@ function Get-PublicationTarget
 				}
 
 				Write-Verbose "Loading Publication Target with ID '$Id'..."
-				$result = Get-Item $Id -ErrorAction SilentlyContinue;
+				$result = Get-TridionItem $Id -ErrorAction SilentlyContinue;
 				if (-not $result)
 				{
 					Write-Error "Publication Target '$Id' does not exist.";
@@ -195,7 +195,7 @@ function Get-PublicationTarget
 			'ByTitle'
 			{
 				Write-Verbose "Loading Publication Target with title '$Title'..."
-				$result = Get-PublicationTargets | ?{$_.Title -eq $Title} | Select -First 1;
+				$result = Get-TridionPublicationTargets | ?{$_.Title -eq $Title} | Select -First 1;
 				if (-not $result)
 				{
 					Write-Error "There is no Publication Target named '$Title'.";
@@ -207,7 +207,7 @@ function Get-PublicationTarget
 	}
 }
 
-Function Get-Item
+Function Get-TridionItem
 {
     <#
     .Synopsis
@@ -257,7 +257,7 @@ Function Get-Item
 	
 	Begin
 	{
-		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -277,11 +277,11 @@ Function Get-Item
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-function Test-Item
+function Test-TridionItem
 {
     <#
     .Synopsis
@@ -321,7 +321,7 @@ function Test-Item
 	
 	Begin
 	{
-		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -331,11 +331,11 @@ function Test-Item
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-function New-Item
+function New-TridionItem
 {
     <#
     .Synopsis
@@ -380,7 +380,7 @@ function New-Item
 	
 	Begin
 	{
-		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -399,12 +399,12 @@ function New-Item
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
 
-function New-Publication
+function New-TridionPublication
 {
     <#
     .Synopsis
@@ -444,7 +444,7 @@ function New-Publication
 	
 	Begin
 	{
-		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -475,11 +475,11 @@ function New-Publication
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-function Remove-Item
+function Remove-TridionItem
 {
     <#
     .Synopsis
@@ -519,7 +519,7 @@ function Remove-Item
 	
 	Begin
 	{
-		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -544,7 +544,7 @@ function Remove-Item
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
@@ -554,11 +554,11 @@ function Remove-Item
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-Item
-Export-ModuleMember Get-Publications
-Export-ModuleMember Get-PublicationTarget
-Export-ModuleMember Get-PublicationTargets
-Export-ModuleMember New-Item
-Export-ModuleMember New-Publication
-Export-ModuleMember Test-Item
-Export-ModuleMember Remove-Item
+Export-ModuleMember Get-TridionItem
+Export-ModuleMember Get-TridionPublications
+Export-ModuleMember Get-TridionPublicationTarget
+Export-ModuleMember Get-TridionPublicationTargets
+Export-ModuleMember New-TridionItem
+Export-ModuleMember New-TridionPublication
+Export-ModuleMember Test-TridionItem
+Export-ModuleMember Remove-TridionItem

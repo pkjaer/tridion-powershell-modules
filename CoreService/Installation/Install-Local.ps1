@@ -41,9 +41,7 @@ function EnsureDirectoriesExist
 	foreach($dir in $directories)
 	{
 		$path = Join-Path $baseDir $dir;
-		
-		#Note: Using the full name of the New-Item cmdlet here because the New-TridionItem function conflicts with it within this module.
-		Microsoft.PowerShell.Management\New-Item -Path $path -ItemType Directory -Force | Out-Null;
+		New-Item -Path $path -ItemType Directory -Force | Out-Null;
 		
 		if (!(Test-Path $path))
 		{

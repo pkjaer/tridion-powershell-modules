@@ -6,14 +6,19 @@
 **************************************************
 #>
 
-Function Convert-ApplicationData
+<#
+**************************************************
+* Public members
+**************************************************
+#>
+Function Convert-TridionApplicationData
 {
     <#
     .Synopsis
     Converts the byte values of a piece of Application Data to a string.
 
     .Inputs
-    The Application Data object, as returned by Get-ApplicationData.
+    The Application Data object, as returned by Get-TridionApplicationData.
 
     .Outputs
     Returns the value of the application data as a string.
@@ -64,12 +69,7 @@ Function Convert-ApplicationData
 }
 
 
-<#
-**************************************************
-* Public members
-**************************************************
-#>
-Function Get-ApplicationData
+Function Get-TridionApplicationData
 {
     <#
     .Synopsis
@@ -105,7 +105,7 @@ Function Get-ApplicationData
 	
 	Begin
 	{
-		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -127,11 +127,11 @@ Function Get-ApplicationData
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-Function Set-ApplicationData
+Function Set-TridionApplicationData
 {
     <#
     .Synopsis
@@ -179,7 +179,7 @@ Function Set-ApplicationData
 	
 	Begin
 	{
-		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -207,11 +207,11 @@ Function Set-ApplicationData
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-Function Remove-ApplicationData
+Function Remove-TridionApplicationData
 {
     <#
     .Synopsis
@@ -241,7 +241,7 @@ Function Remove-ApplicationData
 	
 	Begin
 	{
-		$client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -257,7 +257,7 @@ Function Remove-ApplicationData
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
@@ -266,7 +266,7 @@ Function Remove-ApplicationData
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-ApplicationData
-Export-ModuleMember Set-ApplicationData
-Export-ModuleMember Remove-ApplicationData
-Export-ModuleMember Convert-ApplicationData
+Export-ModuleMember Convert-TridionApplicationData
+Export-ModuleMember Get-TridionApplicationData
+Export-ModuleMember Set-TridionApplicationData
+Export-ModuleMember Remove-TridionApplicationData

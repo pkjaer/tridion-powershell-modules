@@ -85,7 +85,5 @@ FileList = @("Services.psm1")
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''
-
-DefaultCommandPrefix = 'Tridion'
 }
 

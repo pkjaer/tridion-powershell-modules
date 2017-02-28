@@ -150,7 +150,7 @@ Function Save-Settings($settings)
 **************************************************
 #>
 
-Function Get-CoreServiceSettings
+Function Get-TridionCoreServiceSettings
 {
     <#
     .Synopsis
@@ -166,7 +166,7 @@ Function Get-CoreServiceSettings
 	Process { return Get-Settings; }
 }
 
-Function Set-CoreServiceSettings
+Function Set-TridionCoreServiceSettings
 {
     <#
     .Synopsis
@@ -282,7 +282,7 @@ Function Set-CoreServiceSettings
     }
 }
 
-Function Clear-CoreServiceSettings
+Function Clear-TridionCoreServiceSettings
 {
     <#
     .Synopsis
@@ -308,6 +308,6 @@ Function Clear-CoreServiceSettings
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-CoreServiceSettings;
-Export-ModuleMember Set-CoreServiceSettings;
-Export-ModuleMember Clear-CoreServiceSettings;
+Export-ModuleMember Get-TridionCoreServiceSettings;
+Export-ModuleMember Set-TridionCoreServiceSettings;
+Export-ModuleMember Clear-TridionCoreServiceSettings;
