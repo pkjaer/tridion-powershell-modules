@@ -169,7 +169,7 @@ Function Set-CoreServiceSettings
     .Link
     Get the latest version of this script from the following URL:
     https://github.com/pkjaer/tridion-powershell-modules
-
+5
     .Example
     Set-TridionCoreServiceSettings -HostName "machine.domain" -Version "2013-SP1" -ConnectionType netTcp
 	Makes the module connect to a Core Service hosted on "machine.domain", using netTcp bindings and the 2013 SP1 version of the service.
@@ -182,7 +182,7 @@ Function Set-CoreServiceSettings
 		[ValidateNotNullOrEmpty()]
         [string]$HostName,
 		
-		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1', 'Web-8.2', 'Web-8.3')]
+		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1', 'Web-8.5')]
 		[string]$Version,
 		
 		[Parameter()]
@@ -264,22 +264,10 @@ Function Set-CoreServiceSettings
 					$relativeUrl = if ($netTcp) { "/CoreService/201501/netTcp" } else { if ($basic) {"/webservices/CoreService201501.svc/basicHttp"} else  { "/webservices/CoreService201501.svc/wsHttp" } };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
-				"Web-8.2"
-				{
-					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_2.dll';
-					$relativeUrl = if ($netTcp) { "/CoreService/201601/netTcp" } else { if ($basic) {"/webservices/CoreService201601.svc/basicHttp"} else  { "/webservices/CoreService201601.svc/wsHttp" } };
-					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
-				}
-				"Web-8.3"
-				{
-					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_3.dll';
-					$relativeUrl = if ($netTcp) { "/CoreService/201603/netTcp" } else { if ($basic) {"/webservices/CoreService201603.svc/basicHttp"} else { "/webservices/CoreService201603.svc/wsHttp" } };
-					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
-				}
 				"Web-8.5"
 				{
 					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_5.dll';
-					$relativeUrl = if ($netTcp) { "/CoreService/201605/netTcp" } else { if ($basic) {"/webservices/CoreService201605.svc/basicHttp"} else  { "/webservices/CoreService2016035.svc/wsHttp" } };
+					$relativeUrl = if ($netTcp) { "/CoreService/201603/netTcp" } else { if ($basic) {"/webservices/CoreService201603.svc/basicHttp"} else  { "/webservices/CoreService201603.svc/wsHttp" } };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
 			}
