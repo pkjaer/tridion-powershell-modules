@@ -64,7 +64,7 @@ Function Get-CoreServiceBinding
 	}
 	
 	$binding.SendTimeout = $settings.ConnectionSendTimeout;
-	$binding.MaxReceivedMessageSize = 10485760;
+	$binding.MaxReceivedMessageSize = 52428800;
 	$binding.ReaderQuotas = $quotas;
 	return $binding;
 }
