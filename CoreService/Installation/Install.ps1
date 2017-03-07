@@ -20,6 +20,7 @@ $files = @(
 	'AppData.psm1', 
 	'Client.psm1', 
 	'Items.psm1', 
+	'Publishing.psm1', 
 	'Settings.psm1', 
 	'Tridion-CoreService.psd1', 
 	'Trustees.psm1'
@@ -27,7 +28,7 @@ $files = @(
 
 
 # Download the installation script
-wget "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/Shared/Installation/Install-ModuleFromWeb.ps1" | iex
+iwr "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/Shared/Installation/Install-ModuleFromWeb.ps1" | iex
 
 # Install the above files and directories
 Install-ModuleFromWeb -ModuleName "Tridion-CoreService" -BaseUrl $baseDownloadUrl -Files $files -Directories $directories;

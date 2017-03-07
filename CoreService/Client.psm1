@@ -8,7 +8,7 @@
 
 Function Get-CoreServiceBinding
 {
-	$settings = Get-CoreServiceSettings
+	$settings = Get-TridionCoreServiceSettings
 
 	$quotas = New-Object System.Xml.XmlDictionaryReaderQuotas;
 	$quotas.MaxStringContentLength = 10485760;
@@ -64,7 +64,7 @@ Function Get-CoreServiceBinding
 	}
 	
 	$binding.SendTimeout = $settings.ConnectionSendTimeout;
-	$binding.MaxReceivedMessageSize = 52428800;
+	$binding.MaxReceivedMessageSize = [int]::MaxValue;
 	$binding.ReaderQuotas = $quotas;
 	return $binding;
 }
@@ -75,7 +75,7 @@ Function Get-CoreServiceBinding
 * Public members
 **************************************************
 #>
-Function Get-CoreServiceClient
+Function Get-TridionCoreServiceClient
 {
     <#
     .Synopsis
@@ -116,7 +116,7 @@ Function Get-CoreServiceClient
     Param(
 		# The name (including domain) of the user to impersonate when accessing Tridion. 
 		# When omitted the current user will be executing all Tridion commands.
-        [Parameter(ValueFromPipeline=$true)]
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
 		[string]$ImpersonateUserName
 	)
 
@@ -126,7 +126,7 @@ Function Get-CoreServiceClient
         Add-Type -AssemblyName System.ServiceModel
 
         # Load information about the Core Service client available on this system
-        $serviceInfo = Get-CoreServiceSettings
+        $serviceInfo = Get-TridionCoreServiceSettings
         
         Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.EndpointUrl);
         
@@ -146,16 +146,13 @@ Function Get-CoreServiceClient
     {
         try
         {
-            $proxy = [Activator]::CreateInstance($instanceType.FullName, $binding, $endpoint);
-            if($serviceInfo.Username -and $serviceInfo.Password)
-            {
-                Write-Verbose "Using credentials of CoreServiceSettings";
-				$proxy.ClientCredentials.UserName.UserName = $serviceInfo.Username;
-				$proxy.ClientCredentials.UserName.Password = $serviceInfo.Password;
-                
-				$proxy.ClientCredentials.Windows.ClientCredential.UserName = $serviceInfo.Username;
-				$proxy.ClientCredentials.Windows.ClientCredential.Password = $serviceInfo.Password;
-            }
+			$proxy = [Activator]::CreateInstance($instanceType.FullName, $binding, $endpoint);
+			if ($serviceInfo.Credential)
+			{
+				$userName = $serviceInfo.Credential.UserName;
+				Write-Verbose "Connecting as $userName..."
+				$proxy.ClientCredentials.Windows.ClientCredential = [System.Net.NetworkCredential]$serviceInfo.Credential;
+			}
 
 			if ($ImpersonateUserName)
 			{
@@ -173,7 +170,7 @@ Function Get-CoreServiceClient
     }
 }
 
-Function Close-CoreServiceClient
+Function Close-TridionCoreServiceClient
 {
     <#
     .Synopsis
@@ -235,5 +232,5 @@ Function Close-CoreServiceClient
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-CoreServiceClient
-Export-ModuleMember Close-CoreServiceClient
+Export-ModuleMember Get-TridionCoreServiceClient
+Export-ModuleMember Close-TridionCoreServiceClient

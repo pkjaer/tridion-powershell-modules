@@ -16,6 +16,7 @@ $files = @(
 	'AppData.psm1', 
 	'Client.psm1', 
 	'Items.psm1', 
+	'Publishing.psm1', 
 	'Settings.psm1', 
 	'Tridion-CoreService.psd1', 
 	'Trustees.psm1'
@@ -41,6 +42,7 @@ function EnsureDirectoriesExist
 	{
 		$path = Join-Path $baseDir $dir;
 		New-Item -Path $path -ItemType Directory -Force | Out-Null;
+		
 		if (!(Test-Path $path))
 		{
 			throw "Failed to create module directory: $path";

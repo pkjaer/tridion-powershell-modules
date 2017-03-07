@@ -6,7 +6,7 @@
 **************************************************
 #>
 
-function Get-User
+function Get-TridionUser
 {
     <#
     .Synopsis
@@ -66,7 +66,7 @@ function Get-User
 
 	Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
     
     Process
@@ -88,7 +88,7 @@ function Get-User
 				}
 
 				Write-Verbose "Loading User with ID '$Id'..."
-				$result = Get-Item $Id -ErrorAction SilentlyContinue;
+				$result = Get-TridionItem $Id -ErrorAction SilentlyContinue;
 				if (-not $result)
 				{
 					Write-Error "User '$Id' does not exist.";
@@ -100,7 +100,7 @@ function Get-User
 			'ByTitle'
 			{
 				Write-Verbose "Loading User with title '$Title'..."
-				$result = Get-Users | ?{$_.Title -eq $Title} | Select -First 1;
+				$result = Get-TridionUsers | ?{$_.Title -eq $Title} | Select -First 1;
 				if (-not $result)
 				{
 					Write-Error "There is no User named '$Title'.";
@@ -112,7 +112,7 @@ function Get-User
 			'ByDescription'
 			{
 				Write-Verbose "Loading User with description '$Description'..."
-				$result = Get-Users | ?{$_.Description -eq $Description} | Select -First 1;
+				$result = Get-TridionUsers | ?{$_.Description -eq $Description} | Select -First 1;
 				if (-not $result)
 				{
 					Write-Error "There is no User with a description of '$Description'.";
@@ -125,11 +125,11 @@ function Get-User
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-function Get-Group
+function Get-TridionGroup
 {
     <#
     .Synopsis
@@ -188,7 +188,7 @@ function Get-Group
 				}
 
 				Write-Verbose "Loading Tridion Group with ID '$Id'..."
-				$result = Get-Item $Id -ErrorAction SilentlyContinue;
+				$result = Get-TridionItem $Id -ErrorAction SilentlyContinue;
 				if (-not $result)
 				{
 					Write-Error "Group '$Id' does not exist.";
@@ -200,7 +200,7 @@ function Get-Group
 			'ByTitle'
 			{
 				Write-Verbose "Loading Tridion Group with title '$Title'..."
-				$result = Get-Groups | ?{$_.Title -eq $Title} | Select -First 1;
+				$result = Get-TridionGroups | ?{$_.Title -eq $Title} | Select -First 1;
 				if (-not $result)
 				{
 					Write-Error "There is no Group named '$Title'.";
@@ -212,7 +212,7 @@ function Get-Group
 	}
 }
 
-Function Get-Users
+Function Get-TridionUsers
 {
     <#
     .Synopsis
@@ -261,7 +261,7 @@ Function Get-Users
 	
 	Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -280,11 +280,11 @@ Function Get-Users
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-Function Get-Groups
+Function Get-TridionGroups
 {
     <#
     .Synopsis
@@ -313,7 +313,7 @@ Function Get-Groups
 	
 	Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 	
     Process
@@ -328,11 +328,11 @@ Function Get-Groups
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
-function New-Group
+function New-TridionGroup
 {
     <#
     .Synopsis
@@ -404,7 +404,7 @@ function New-Group
 	
 	Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 
     Process
@@ -467,12 +467,12 @@ function New-Group
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}	
 }
 
 
-function New-User
+function New-TridionUser
 {
     <#
     .Synopsis
@@ -549,7 +549,7 @@ function New-User
 	
 	Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 		$tridionGroups = $null;
 		$groupsLoaded = $false;
 	}
@@ -593,7 +593,7 @@ function New-User
 							# It's not a URI, it's a name. Look up the group URI by its title.
 							if (-not $groupsLoaded)
 							{
-								$tridionGroups = Get-Groups
+								$tridionGroups = Get-TridionGroups
 								$groupsLoaded = $true;
 							}
 							
@@ -635,12 +635,12 @@ function New-User
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}	
 }
 
 
-function Disable-User
+function Disable-TridionUser
 {
     <#
     .Synopsis
@@ -648,7 +648,7 @@ function Disable-User
 
     .Description
     Disables the specified user in Tridion Content Manager, preventing the user from logging in or performing any actions.
-    This action lasts until Enable-User is called or the user is explicitly enabled by other means (such as within the CME).
+    This action lasts until Enable-TridionUser is called or the user is explicitly enabled by other means (such as within the CME).
 
     .Inputs
     [string] Id: the TCM URI of the user.
@@ -683,7 +683,7 @@ function Disable-User
 	
 	Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 
     Process
@@ -700,7 +700,7 @@ function Disable-User
 					return;
 				}
 				
-				$user = Get-Item -Id $Id -ErrorAction SilentlyContinue -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+				$user = Get-TridionItem -Id $Id -ErrorAction SilentlyContinue -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 				if ($user -eq $null) 
 				{ 
 					Write-Error "'$Id' is not a valid User.";
@@ -728,12 +728,12 @@ function Disable-User
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}	
 }
 
 
-function Enable-User
+function Enable-TridionUser
 {
     <#
     .Synopsis
@@ -775,7 +775,7 @@ function Enable-User
 	
 	Begin
 	{
-        $client = Get-CoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 	}
 
     Process
@@ -792,7 +792,7 @@ function Enable-User
 					return;
 				}
 				
-				$user = Get-Item -Id $Id -ErrorAction SilentlyContinue -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+				$user = Get-TridionItem -Id $Id -ErrorAction SilentlyContinue -Verbose:($PSBoundParameters['Verbose'] -eq $true);
 				if ($user -eq $null) 
 				{ 
 					Write-Error "'$Id' is not a valid User.";
@@ -820,7 +820,7 @@ function Enable-User
 	
 	End
 	{
-		Close-CoreServiceClient $client;
+		Close-TridionCoreServiceClient $client;
 	}
 }
 
@@ -830,11 +830,11 @@ function Enable-User
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-User
-Export-ModuleMember Get-Users
-Export-ModuleMember Get-Group
-Export-ModuleMember Get-Groups
-Export-ModuleMember New-Group
-Export-ModuleMember New-User
-Export-ModuleMember Disable-User
-Export-ModuleMember Enable-User
+Export-ModuleMember Get-TridionUser
+Export-ModuleMember Get-TridionUsers
+Export-ModuleMember Get-TridionGroup
+Export-ModuleMember Get-TridionGroups
+Export-ModuleMember New-TridionGroup
+Export-ModuleMember New-TridionUser
+Export-ModuleMember Disable-TridionUser
+Export-ModuleMember Enable-TridionUser

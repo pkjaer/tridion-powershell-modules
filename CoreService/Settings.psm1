@@ -25,6 +25,15 @@ Function Add-SettingIfMissing($Object, $Name, $Value)
 	}
 }
 
+Function Remove-SettingIfPresent($Object, $Name)
+{
+	if (Has-Property -Object $Object -Name $Name)
+	{
+		$Object.PSObject.Properties.Remove($Name);
+		Write-Warning "The setting '$name' is no longer used and has been removed.";
+	}
+}
+
 Function New-ObjectWithProperties([Hashtable]$properties)
 {
 	$result = New-Object -TypeName System.Object;
@@ -45,7 +54,7 @@ Function Get-DefaultSettings
 		"EndpointUrl" = "http://localhost/webservices/CoreService2011.svc/wsHttp";
 		"ConnectionSendTimeout" = "00:01:00";
 		"HostName" = "localhost";
-		"UserName" = ([Environment]::UserDomainName + "\" + [Environment]::UserName);
+		"Credential" = ([PSCredential]$null);
         "Password" = "";
 		"Version" = "2011-SP1";
 		"ConnectionType" = "Default";
@@ -84,6 +93,8 @@ Function Convert-OldSettings($settings)
 	{
 		Write-Verbose "Upgrading your settings..."
 		Add-SettingIfMissing -Object $settings -Name 'ConnectionSendTimeout' -Value '00:01:00';
+		Add-SettingIfMissing -Object $settings -Name 'Credential' -Value ([PSCredential]$null);
+		Remove-SettingIfPresent -Object $settings -Name 'UserName';
 		$settings.ModuleVersion = $moduleVersion;
 		Save-Settings $settings;
 	}
@@ -124,10 +135,7 @@ Function Save-Settings($settings)
 				New-Item -Path $settingsDir -ItemType Container | Out-Null
 			}
 			
-            #todo Find a more elegant way to prevent saving the password to the settings file
-            $password = $settings.Password
-            $settings.Password = ""
-			Export-Clixml -Path $settingsFile -InputObject $settings;
+			Export-Clixml -Path $settingsFile -InputObject $settings -Confirm:$false -Force;
     		$settings.Password = $password
 			$script:Settings = $settings;
 		}
@@ -144,7 +152,7 @@ Function Save-Settings($settings)
 **************************************************
 #>
 
-Function Get-CoreServiceSettings
+Function Get-TridionCoreServiceSettings
 {
     <#
     .Synopsis
@@ -160,7 +168,7 @@ Function Get-CoreServiceSettings
 	Process { return Get-Settings; }
 }
 
-Function Set-CoreServiceSettings
+Function Set-TridionCoreServiceSettings
 {
     <#
     .Synopsis
@@ -174,6 +182,9 @@ Function Set-CoreServiceSettings
     Set-TridionCoreServiceSettings -HostName "machine.domain" -Version "2013-SP1" -ConnectionType netTcp
 	Makes the module connect to a Core Service hosted on "machine.domain", using netTcp bindings and the 2013 SP1 version of the service.
 	
+    .Example
+    Set-TridionCoreServiceSettings -Credential (Get-Credential)
+	Prompts for a username and password to use when connecting to Tridion.
     #>
     [CmdletBinding()]
     Param
@@ -186,7 +197,7 @@ Function Set-CoreServiceSettings
 		[string]$Version,
 		
 		[Parameter()]
-		[string]$UserName,
+		[PSCredential]$Credential,
 		
 		[Parameter()]
 		[string]$Password,
@@ -204,18 +215,19 @@ Function Set-CoreServiceSettings
 
     Process
     {
-		$hostNameSpecified = (![string]::IsNullOrEmpty($HostName));
-		$userNameSpecified = (![string]::IsNullOrEmpty($UserName));
-        $passwordSpecified = (![string]::IsNullOrEmpty($Password));
-		$versionSpecified = (![string]::IsNullOrEmpty($Version));
-		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
-		$connectionSendTimeoutSpecified = (![string]::IsNullOrEmpty($ConnectionSendTimeout));
+		$parametersSpecified = $MyInvocation.BoundParameters.Keys;
+	
+		$connectionTypeSpecified = ($parametersSpecified -contains 'ConnectionType');
+		$connectionSendTimeoutSpecified = ($parametersSpecified -contains 'ConnectionSendTimeout');
+		$credentialSpecified = ($parametersSpecified -contains 'Credential');
+		$hostNameSpecified = ($parametersSpecified -contains 'HostName');
+		$versionSpecified = ($parametersSpecified -contains 'Version');
 		
 		$settings = Get-Settings;
 		if ($connectionTypeSpecified) { $settings.ConnectionType = $ConnectionType; }
 		if ($connectionSendTimeoutSpecified) { $settings.ConnectionSendTimeout = $ConnectionSendTimeout; }
+		if ($credentialSpecified) { $settings.Credential = $Credential; }
 		if ($hostNameSpecified) { $settings.HostName = $HostName; }
-		if ($userNameSpecified) { $settings.UserName = $UserName; }
         if ($passwordSpecified) { $settings.Password = $Password; }
 		if ($versionSpecified) { $settings.Version = $Version; }
 
@@ -267,7 +279,7 @@ Function Set-CoreServiceSettings
 				"Web-8.5"
 				{
 					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_5.dll';
-					$relativeUrl = if ($netTcp) { "/CoreService/201603/netTcp" } else { if ($basic) {"/webservices/CoreService201603.svc/basicHttp"} else  { "/webservices/CoreService201603.svc/wsHttp" } };
+					$relativeUrl = if ($netTcp) { "/CoreService/201603/netTcp" } else { "/webservices/CoreService201603.svc/wsHttp" };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
 			}
@@ -280,11 +292,26 @@ Function Set-CoreServiceSettings
     }
 }
 
-Function Clear-CoreServiceSettings
+Function Clear-TridionCoreServiceSettings
 {
     <#
     .Synopsis
-    Gets the settings used to connect to the Core Service.
+    Resets the Core Service settings to the default values.
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+	#>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    Param()
+	
+	Process {
+        $settings = Get-DefaultSettings
+		if ($PSCmdlet.ShouldProcess('CoreServiceSettings.xml'))
+		{
+			Save-Settings $settings
+		}        
+    }
+}
 
     .Link
     Get the latest version of this script from the following URL:
@@ -304,6 +331,6 @@ Function Clear-CoreServiceSettings
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-CoreServiceSettings;
-Export-ModuleMember Set-CoreServiceSettings;
-Export-ModuleMember Clear-CoreServiceSettings;
+Export-ModuleMember Get-TridionCoreServiceSettings;
+Export-ModuleMember Set-TridionCoreServiceSettings;
+Export-ModuleMember Clear-TridionCoreServiceSettings;
