@@ -46,6 +46,7 @@ Function Get-DefaultSettings
 		"ConnectionSendTimeout" = "00:01:00";
 		"HostName" = "localhost";
 		"UserName" = ([Environment]::UserDomainName + "\" + [Environment]::UserName);
+        "Password" = "";
 		"Version" = "2011-SP1";
 		"ConnectionType" = "Default";
 		"ModuleVersion" = $moduleVersion;
@@ -123,7 +124,11 @@ Function Save-Settings($settings)
 				New-Item -Path $settingsDir -ItemType Container | Out-Null
 			}
 			
+            #todo Find a more elegant way to prevent saving the password to the settings file
+            $password = $settings.Password
+            $settings.Password = ""
 			Export-Clixml -Path $settingsFile -InputObject $settings;
+    		$settings.Password = $password
 			$script:Settings = $settings;
 		}
 		catch
@@ -164,7 +169,7 @@ Function Set-CoreServiceSettings
     .Link
     Get the latest version of this script from the following URL:
     https://github.com/pkjaer/tridion-powershell-modules
-
+5
     .Example
     Set-TridionCoreServiceSettings -HostName "machine.domain" -Version "2013-SP1" -ConnectionType netTcp
 	Makes the module connect to a Core Service hosted on "machine.domain", using netTcp bindings and the 2013 SP1 version of the service.
@@ -177,13 +182,16 @@ Function Set-CoreServiceSettings
 		[ValidateNotNullOrEmpty()]
         [string]$HostName,
 		
-		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1')]
+		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1', 'Web-8.5')]
 		[string]$Version,
 		
 		[Parameter()]
 		[string]$UserName,
 		
-		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp')]
+		[Parameter()]
+		[string]$Password,
+		
+		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp', 'BASIC', 'BASIC-SSL')]
 		[Parameter()]
 		[string]$ConnectionType,
 		
@@ -198,6 +206,7 @@ Function Set-CoreServiceSettings
     {
 		$hostNameSpecified = (![string]::IsNullOrEmpty($HostName));
 		$userNameSpecified = (![string]::IsNullOrEmpty($UserName));
+        $passwordSpecified = (![string]::IsNullOrEmpty($Password));
 		$versionSpecified = (![string]::IsNullOrEmpty($Version));
 		$connectionTypeSpecified = (![string]::IsNullOrEmpty($ConnectionType));
 		$connectionSendTimeoutSpecified = (![string]::IsNullOrEmpty($ConnectionSendTimeout));
@@ -207,18 +216,23 @@ Function Set-CoreServiceSettings
 		if ($connectionSendTimeoutSpecified) { $settings.ConnectionSendTimeout = $ConnectionSendTimeout; }
 		if ($hostNameSpecified) { $settings.HostName = $HostName; }
 		if ($userNameSpecified) { $settings.UserName = $UserName; }
+        if ($passwordSpecified) { $settings.Password = $Password; }
 		if ($versionSpecified) { $settings.Version = $Version; }
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
 		{
 			$netTcp =  ($settings.connectionType -eq "netTcp");
+			$basic =  ($settings.connectionType -eq "BASIC" -or $settings.connectionType -eq "BASIC-SSL");
 			$protocol = "http://";
 			$port = "";
-			
+
+			$settings.ClassName = if ($basic) {"Tridion.ContentManager.CoreService.Client.CoreServiceClient"} else  { "Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient" } 
+
 			switch($settings.connectionType)
 			{
 				"SSL" 		{ $protocol = "https://"; }
 				"LDAP-SSL" 	{ $protocol = "https://"; }
+				"BASIC-SSL" { $protocol = "https://"; }
 				"netTcp"	{ $protocol = "net.tcp://"; $port = ":2660"; }
 			}
 			
@@ -229,25 +243,31 @@ Function Set-CoreServiceSettings
 				"2011-SP1" 
 				{ 
 					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.2011sp1.dll';
-					$relativeUrl = if ($netTcp) { "/CoreService/2011/netTcp" } else { "/webservices/CoreService2011.svc/wsHttp" };
+					$relativeUrl = if ($netTcp) { "/CoreService/2011/netTcp" } else { if ($basic) {"/webservices/CoreService2011.svc/basicHttp"} else  { "/webservices/CoreService2011.svc/wsHttp" } };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
 				"2013" 
 				{
 					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.2013.dll';
-					$relativeUrl = if ($netTcp) { "/CoreService/2012/netTcp" } else { "/webservices/CoreService2012.svc/wsHttp" };
+					$relativeUrl = if ($netTcp) { "/CoreService/2012/netTcp" } else { if ($basic) {"/webservices/CoreService2012.svc/basicHttp"} else  { "/webservices/CoreService2012.svc/wsHttp" } };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
 				"2013-SP1" 
 				{ 
 					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.2013sp1.dll';
-					$relativeUrl = if ($netTcp) { "/CoreService/2013/netTcp" } else { "/webservices/CoreService2013.svc/wsHttp" };
+					$relativeUrl = if ($netTcp) { "/CoreService/2013/netTcp" } else { if ($basic) {"/webservices/CoreService2013.svc/basicHttp"} else  { "/webservices/CoreService2013.svc/wsHttp" } };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
 				"Web-8.1"
 				{
 					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_1.dll';
-					$relativeUrl = if ($netTcp) { "/CoreService/201501/netTcp" } else { "/webservices/CoreService201501.svc/wsHttp" };
+					$relativeUrl = if ($netTcp) { "/CoreService/201501/netTcp" } else { if ($basic) {"/webservices/CoreService201501.svc/basicHttp"} else  { "/webservices/CoreService201501.svc/wsHttp" } };
+					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
+				}
+				"Web-8.5"
+				{
+					$settings.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_5.dll';
+					$relativeUrl = if ($netTcp) { "/CoreService/201603/netTcp" } else { if ($basic) {"/webservices/CoreService201603.svc/basicHttp"} else  { "/webservices/CoreService201603.svc/wsHttp" } };
 					$settings.EndpointUrl = (@($protocol, $settings.HostName, $port, $relativeUrl) -join "");
 				}
 			}
@@ -260,6 +280,24 @@ Function Set-CoreServiceSettings
     }
 }
 
+Function Clear-CoreServiceSettings
+{
+    <#
+    .Synopsis
+    Gets the settings used to connect to the Core Service.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+	#>
+    [CmdletBinding()]
+    Param()
+	
+	Process {
+        $settings = Get-DefaultSettings
+        Save-Settings $settings
+    }
+}
 
 <#
 **************************************************
@@ -268,3 +306,4 @@ Function Set-CoreServiceSettings
 #>
 Export-ModuleMember Get-CoreServiceSettings;
 Export-ModuleMember Set-CoreServiceSettings;
+Export-ModuleMember Clear-CoreServiceSettings;
