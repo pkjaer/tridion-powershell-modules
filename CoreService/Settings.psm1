@@ -58,6 +58,7 @@ Function Get-DefaultSettings
 		"Version" = "2011-SP1";
 		"ConnectionType" = "Default";
 		"ModuleVersion" = $moduleVersion;
+		"CredentialType" = "Default";
 	};
 }
 
@@ -93,6 +94,7 @@ Function Convert-OldSettings($settings)
 		Write-Verbose "Upgrading your settings..."
 		Add-SettingIfMissing -Object $settings -Name 'ConnectionSendTimeout' -Value '00:01:00';
 		Add-SettingIfMissing -Object $settings -Name 'Credential' -Value ([PSCredential]$null);
+		Add-SettingIfMissing -Object $settings -Name 'CredentialType' -Value 'Default';
 		Remove-SettingIfPresent -Object $settings -Name 'UserName';
 		$settings.ModuleVersion = $moduleVersion;
 		Save-Settings $settings;
@@ -204,6 +206,10 @@ Function Set-TridionCoreServiceSettings
 		[Parameter()]
 		[string]$ConnectionSendTimeout,
 		
+		[ValidateSet('', 'Default', 'Windows', 'Basic')]
+		[Parameter()]
+		[string]$CredentialType,
+
 		[Parameter()]
 		[switch]$Persist
     )
@@ -217,6 +223,7 @@ Function Set-TridionCoreServiceSettings
 		$credentialSpecified = ($parametersSpecified -contains 'Credential');
 		$hostNameSpecified = ($parametersSpecified -contains 'HostName');
 		$versionSpecified = ($parametersSpecified -contains 'Version');
+		$CredentialTypeSpecified = ($parametersSpecified -contains 'CredentialType');
 		
 		$settings = Get-Settings;
 		if ($connectionTypeSpecified) { $settings.ConnectionType = $ConnectionType; }
@@ -224,6 +231,7 @@ Function Set-TridionCoreServiceSettings
 		if ($credentialSpecified) { $settings.Credential = $Credential; }
 		if ($hostNameSpecified) { $settings.HostName = $HostName; }
 		if ($versionSpecified) { $settings.Version = $Version; }
+		if ($CredentialTypeSpecified) { $settings.CredentialType = $CredentialType; }
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
 		{
