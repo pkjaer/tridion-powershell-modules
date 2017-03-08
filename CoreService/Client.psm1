@@ -21,13 +21,13 @@ Function Get-CoreServiceBinding
 		{ 
 			$binding = New-Object System.ServiceModel.WSHttpBinding;
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Message;
-			$binding.Security.Transport.ClientCredentialType = "Basic";
+			$binding.Security.Transport.ClientCredentialType = (Get-ClientCredentialType -DefaultValue "Basic");
 		}
 		"LDAP-SSL"
 		{
 			$binding = New-Object System.ServiceModel.WSHttpBinding;
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Transport;
-			$binding.Security.Transport.ClientCredentialType = "Basic";
+			$binding.Security.Transport.ClientCredentialType = (Get-ClientCredentialType -DefaultValue "Basic")
 		}
 		"netTcp" 
 		{ 
@@ -41,13 +41,25 @@ Function Get-CoreServiceBinding
 		{
 			$binding = New-Object System.ServiceModel.WSHttpBinding;
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Transport;
-			$binding.Security.Transport.ClientCredentialType = "Windows";
+			$binding.Security.Transport.ClientCredentialType = (Get-ClientCredentialType -DefaultValue "Windows")
+		}
+		"BASIC"
+		{
+			$binding = New-Object System.ServiceModel.BasicHttpBinding;
+			$binding.Security.Mode = [System.ServiceModel.BasicHttpSecurityMode]::TransportCredentialOnly;
+			$binding.Security.Transport.ClientCredentialType = (Get-ClientCredentialType -DefaultValue "Windows")
+		}
+		"BASIC-SSL"
+		{
+			$binding = New-Object System.ServiceModel.BasicHttpsBinding;
+			$binding.Security.Mode = [System.ServiceModel.BasicHttpsSecurityMode]::Transport;
+			$binding.Security.Transport.ClientCredentialType = (Get-ClientCredentialType -DefaultValue "Windows")
 		}
 		default 
 		{ 
 			$binding = New-Object System.ServiceModel.WSHttpBinding; 
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Message;
-			$binding.Security.Transport.ClientCredentialType = "Windows";
+			$binding.Security.Transport.ClientCredentialType = (Get-ClientCredentialType -DefaultValue "Windows")
 		}
 	}
 	
@@ -57,7 +69,24 @@ Function Get-CoreServiceBinding
 	return $binding;
 }
 
-
+Function Get-ClientCredentialType
+{
+	[CmdletBinding()]
+	Param(
+		[string]$DefaultValue
+	)
+	Process{
+		$settings = Get-TridionCoreServiceSettings
+		if ($settings.CredentialType -eq 'Default')
+		{
+			return $DefaultValue
+		}
+	  else
+		{
+			return $settings.CredentialType
+		}
+  }
+}
 <#
 **************************************************
 * Public members
@@ -116,13 +145,14 @@ Function Get-TridionCoreServiceClient
         # Load information about the Core Service client available on this system
         $serviceInfo = Get-TridionCoreServiceSettings
         
-        Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.HostName);
+        Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.EndpointUrl);
         
         # Load the Core Service Client
         $endpoint = New-Object System.ServiceModel.EndpointAddress -ArgumentList $serviceInfo.EndpointUrl
         $binding = Get-CoreServiceBinding;
-		
-		#Load the assembly without locking the file
+
+        #Load the assembly without locking the file
+        Write-Verbose ("Loading assembly {0}" -f $serviceInfo.AssemblyPath) 
 		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
 		if (!$assemblyBytes) { throw "Unable to load the assembly at: " + $serviceInfo.AssemblyPath; }
         $assembly = [Reflection.Assembly]::Load($assemblyBytes);
@@ -139,6 +169,20 @@ Function Get-TridionCoreServiceClient
 				$userName = $serviceInfo.Credential.UserName;
 				Write-Verbose "Connecting as $userName..."
 				$proxy.ClientCredentials.Windows.ClientCredential = [System.Net.NetworkCredential]$serviceInfo.Credential;
+
+        if ($binding.Security.Transport.ClientCredentialType -eq "Basic")
+        {
+					if ($proxy.ClientCredentials.Windows.ClientCredential.Domain)
+					{
+						$fullUsername = "{0}\{1}" -f $proxy.ClientCredentials.Windows.ClientCredential.Domain, $proxy.ClientCredentials.Windows.ClientCredential.Username
+					}
+					else
+					{
+						$fullUsername = $proxy.ClientCredentials.Windows.ClientCredential.Username
+					}
+					$proxy.ClientCredentials.UserName.UserName = $fullUsername;
+					$proxy.ClientCredentials.UserName.Password = $proxy.ClientCredentials.Windows.ClientCredential.Password;
+				}
 			}
 
 			if ($ImpersonateUserName)
