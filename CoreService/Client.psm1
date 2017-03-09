@@ -6,14 +6,14 @@
 **************************************************
 #>
 
-Function Get-CoreServiceBinding
+Function _Get-CoreServiceBinding
 {
 	$settings = Get-TridionCoreServiceSettings
 
 	$quotas = New-Object System.Xml.XmlDictionaryReaderQuotas;
-	$quotas.MaxStringContentLength = 10485760;
-	$quotas.MaxArrayLength = 10485760;
-	$quotas.MaxBytesPerRead = 10485760;
+	$quotas.MaxStringContentLength = [int]::MaxValue;
+	$quotas.MaxArrayLength = [int]::MaxValue;
+	$quotas.MaxBytesPerRead = [int]::MaxValue;
 
 	switch($settings.ConnectionType)
 	{
@@ -55,6 +55,24 @@ Function Get-CoreServiceBinding
 	$binding.MaxReceivedMessageSize = [int]::MaxValue;
 	$binding.ReaderQuotas = $quotas;
 	return $binding;
+}
+
+Function _New-AssemblyInstance($instanceTypeName, $binding, $endpoint)
+{
+	return [Activator]::CreateInstance($instanceTypeName, $binding, $endpoint);
+}
+
+Function _Set-Credential($client, $credential)
+{
+	$userName = $credential.UserName;
+	Write-Verbose "Connecting as $userName..."
+	$client.ClientCredentials.Windows.ClientCredential = [System.Net.NetworkCredential]$credential;
+}
+
+Function _Set-ImpersonateUser($client, $userName)
+{
+	Write-Verbose "Impersonating '$userName'...";
+	$client.Impersonate($userName) | Out-Null;
 }
 
 
@@ -120,7 +138,7 @@ Function Get-TridionCoreServiceClient
         
         # Load the Core Service Client
         $endpoint = New-Object System.ServiceModel.EndpointAddress -ArgumentList $serviceInfo.EndpointUrl
-        $binding = Get-CoreServiceBinding;
+        $binding = _Get-CoreServiceBinding;
 		
 		#Load the assembly without locking the file
 		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
@@ -133,18 +151,15 @@ Function Get-TridionCoreServiceClient
     {
         try
         {
-			$proxy = [Activator]::CreateInstance($instanceType.FullName, $binding, $endpoint);
+			$proxy = _New-AssemblyInstance $instanceType.FullName $binding $endpoint;
 			if ($serviceInfo.Credential)
 			{
-				$userName = $serviceInfo.Credential.UserName;
-				Write-Verbose "Connecting as $userName..."
-				$proxy.ClientCredentials.Windows.ClientCredential = [System.Net.NetworkCredential]$serviceInfo.Credential;
+				_Set-Credential $proxy $serviceInfo.Credential;
 			}
 
 			if ($ImpersonateUserName)
 			{
-				Write-Verbose "Impersonating '$ImpersonateUserName'...";
-				$proxy.Impersonate($ImpersonateUserName) | Out-Null;
+				_Set-ImpersonateUser $proxy $ImpersonateUserName;
 			}
 			
             return $proxy;

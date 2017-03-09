@@ -9,7 +9,20 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 ### Release notes
 
+v2.4.0.0
+
+ - All cmdlets and their parameters have been reviewed and adjusted to fit the "[Strongly Encouraged Development Guidelines](https://msdn.microsoft.com/en-us/library/dd878270%28v=vs.85%29.aspx)" from Microsoft. 
+   Aliases have been provided, so your existing scripts will continue to work.
+ - Added support for the PowerShell pipeline as input to most functions.
+ - Set-TridionCoreServiceSettings and Clear-TridionCoreServiceSettings now support -PassThru to return the updated settings.
+ - Get-TridionPublications have been renamed to Get-TridionPublication.
+	 - It now supports look-ups by ID and (partial) Title. This will return all Publications that match the given title.
+	 - The parameter 'Parents' has been renamed to 'Parent' and supports passing a single value or an array and the values may be strings (URIs) or objects (other Publications).
+	 - You may also set the parents using the pipeline (e.g. Get-TridionPublication -Title '500 Website *' | New-Publication -Title 'Inherets from all 500 Website Publications')
+ - Introduced Pester scripts to test the functionality and ensure backwards-compatibility. These are not installed but are run when code is checked into GitHub.
+	 
 v2.3.0.0
+
 - Added functions to Publish and Unpublish items (Publish-TridionItem, Unpublish-TridionItem)
 - You may now run the module as a different user by specifying the Credential setting (e.g. "Set-TridionCoreServiceSettings -Credential (Get-Credential)")
    NOTE: The username and password are encrypted and are safe to store using the -Persist parameter.
@@ -83,6 +96,7 @@ v1.0.3.0
 
 
 v1.0.2.0
+
 - Added checks for $null before calling Close on the Core Service client.
 - Changed the TransactionProtocol and SecurityModel property to use the enumerations instead of strings (the conversion didn't work for everyone).
 - Removed the unused Utilities.psm1 file.
@@ -92,6 +106,7 @@ v1.0.2.0
 
 
 v1.1.0.0
+
 - Removed support for the "2010" endpoint.
 - Consolidated all settings into a single Set-TridionCoreServiceSettings method.
 - The settings can now be persisted to disk so you don't have to set them every time.
