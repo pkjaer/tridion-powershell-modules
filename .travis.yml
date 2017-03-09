@@ -1,4 +1,0 @@
-install: true
-
-script:
-  - powershell -file run-tests.ps1
