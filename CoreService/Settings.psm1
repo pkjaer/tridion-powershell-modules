@@ -6,15 +6,7 @@
 **************************************************
 #>
 
-Function _Add-Property($Object, $Name, $Value)
-{
-	Add-Member -InputObject $Object -MemberType NoteProperty -Name $Name -Value $Value;
-}
-
-Function _Has-Property($Object, $Name)
-{
-	return Get-Member -InputObject $Object -Name $Name -MemberType NoteProperty;
-}
+. (Join-Path $PSScriptRoot 'Utilities.ps1')
 
 Function _Add-SettingIfMissing($Object, $Name, $Value)
 {
@@ -34,20 +26,10 @@ Function _Remove-SettingIfPresent($Object, $Name)
 	}
 }
 
-Function _New-ObjectWithProperties([Hashtable]$properties)
-{
-	$result = New-Object -TypeName System.Object;
-	foreach($key in $properties.Keys)
-	{
-		_Add-Property -Object $result -Name $key -Value $properties[$key];
-	}
-	return $result;
-}
-
 Function _Get-DefaultSettings
 {
 	$clientDir = Join-Path $PSScriptRoot 'Clients';
-	$moduleVersion = (Get-Module Tridion-CoreService).Version;
+	$moduleVersion = _Get-ModuleVersion;
 	return _New-ObjectWithProperties @{
 		"AssemblyPath" = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.2011sp1.dll';
 		"ClassName" = "Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient";
@@ -116,7 +98,6 @@ Function _Restore-Settings
 		catch
 		{
 			Write-Warning "Failed to load your existing settings. Using the default settings. "; 
-			return _Get-DefaultSettings;
 		}
 	}
 	return _Get-DefaultSettings;
@@ -221,17 +202,17 @@ Function Set-TridionCoreServiceSettings
 		[Parameter()]
 		[PSCredential]$Credential,
 		
-		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp', 'BASIC', 'BASIC-SSL')]
+		[ValidateSet('', 'Default', 'Windows', 'Basic')]
+		[Parameter()]
+		[string]$CredentialType,
+
+		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp', 'Basic', 'Basic-SSL')]
 		[Parameter()]
 		[string]$ConnectionType,
 		
 		[Parameter()]
 		[string]$ConnectionSendTimeout,
 		
-		[ValidateSet('', 'Default', 'Windows', 'Basic')]
-		[Parameter()]
-		[string]$CredentialType,
-
 		[Parameter()]
 		[switch]$Persist,
 		
@@ -248,7 +229,7 @@ Function Set-TridionCoreServiceSettings
 		$credentialSpecified = ($parametersSpecified -contains 'Credential');
 		$hostNameSpecified = ($parametersSpecified -contains 'HostName');
 		$versionSpecified = ($parametersSpecified -contains 'Version');
-		$CredentialTypeSpecified = ($parametersSpecified -contains 'CredentialType');
+		$credentialTypeSpecified = ($parametersSpecified -contains 'CredentialType');
 		
 		$result = _Get-Settings;
 		if ($connectionTypeSpecified) { $result.ConnectionType = $ConnectionType; }
@@ -256,24 +237,24 @@ Function Set-TridionCoreServiceSettings
 		if ($credentialSpecified) { $result.Credential = $Credential; }
 		if ($hostNameSpecified) { $result.HostName = $HostName; }
 		if ($versionSpecified) { $result.Version = $Version; }
-		if ($CredentialTypeSpecified) { $settings.CredentialType = $CredentialType; }
+		if ($credentialTypeSpecified)  {  $result.CredentialType = $CredentialType;  }
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
 		{
 			$netTcp =  ($result.connectionType -eq "netTcp");
 			$host = $result.HostName;
-			$basic =  ($settings.connectionType -eq "BASIC" -or $settings.connectionType -eq "BASIC-SSL");
+			$basic =  ($result.connectionType -eq "Basic" -or $result.connectionType -eq "Basic-SSL");
 			$protocol = "http://";
 			$port = "";
 
-			$settings.ClassName = if ($basic) {"Tridion.ContentManager.CoreService.Client.CoreServiceClient"} 
-														else  { "Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient" } 
-
+			$result.ClassName = if ($basic) { 'Tridion.ContentManager.CoreService.Client.CoreServiceClient' }
+												else { 'Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient' };
+			
 			switch($result.connectionType)
 			{
 				"SSL" 		{ $protocol = "https://"; }
 				"LDAP-SSL" 	{ $protocol = "https://"; }
-				"BASIC-SSL" { $protocol = "https://"; }
+				"Basic-SSL" { $protocol = "https://"; }
 				"netTcp"	{ $protocol = "net.tcp://"; $port = ":2660"; }
 			}
 			

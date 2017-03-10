@@ -81,7 +81,7 @@ AliasesToExport = '*'
 ModuleList = @()
 
 # List of all files packaged with this module
-FileList = @("AppData.psm1", "Client.psm1", "Items.psm1", "Publishing.psm1", "Settings.psm1", "Trustees.psm1")
+FileList = @("AppData.psm1", "Client.psm1", "Items.psm1", "Publishing.psm1", "Settings.psm1", "Trustees.psm1", "Utilities.ps1")
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''

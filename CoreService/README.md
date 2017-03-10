@@ -12,15 +12,23 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 v2.4.0.0
 
  - All cmdlets and their parameters have been reviewed and adjusted to fit the "[Strongly Encouraged Development Guidelines](https://msdn.microsoft.com/en-us/library/dd878270%28v=vs.85%29.aspx)" from Microsoft. 
-   Aliases have been provided, so your existing scripts will continue to work.
+   Aliases have been provided, so your existing scripts will continue to work. Exception: calling Get-TridionUser without parameters no longer returns the current user (see below).
  - Added support for the PowerShell pipeline as input to most functions.
  - Set-TridionCoreServiceSettings and Clear-TridionCoreServiceSettings now support -PassThru to return the updated settings.
  - Get-TridionPublications have been renamed to Get-TridionPublication.
 	 - It now supports look-ups by ID and (partial) Title. This will return all Publications that match the given title.
 	 - The parameter 'Parents' has been renamed to 'Parent' and supports passing a single value or an array and the values may be strings (URIs) or objects (other Publications).
 	 - You may also set the parents using the pipeline (e.g. Get-TridionPublication -Title '500 Website *' | New-Publication -Title 'Inherets from all 500 Website Publications')
+ - Get-TridionUsers has been renamed to Get-TridionUser.
+     - It now supports look-ups by ID, (partial) Title, (partial) Description, and a custom filtering script block. This will return all matching the criteria.
+     - The -Filter parameter can now be piped into the method. 
+	 - **(Breaking change)** When called without a parameter, it no longer returns the current user (but all users). To get the current user, specify the -Current switch.
+ - Get-TridionGroups has been renamed to Get-TridionGroup.
+ - Added support for basic HTTP connections to the Core Service (ConnectionType setting) and the ability to override the CredentialType (which also supports Basic now)
  - Introduced Pester scripts to test the functionality and ensure backwards-compatibility. These are not installed but are run when code is checked into GitHub.
-	 
+	
+Special thanks to Jacques Kors for his contributions to this version.
+	
 v2.3.0.0
 
 - Added functions to Publish and Unpublish items (Publish-TridionItem, Unpublish-TridionItem)

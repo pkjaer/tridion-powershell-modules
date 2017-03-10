@@ -1,0 +1,178 @@
+$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
+
+<#
+**************************************************
+* Tests
+**************************************************
+#>
+
+Describe "Core Service Trustee Tests" {
+	BeforeAll {
+		$parent = Split-Path -Parent $here
+		
+		Get-Module Tridion-CoreService -All | Remove-Module;
+		$modulesToImport = @('Tridion-CoreService.psd1', 'Trustees.psm1');
+		$modulesToImport | % { Import-Module (Join-Path $parent $_) -Force; }
+	}
+	
+	# InModuleScope allows us to mock the private, non-exported functions in the module
+	InModuleScope Trustees {
+	
+		# ***********************
+		# Mock Items
+		# ***********************
+		$user1 = [PSCustomObject]@{ Id = 'tcm:0-12-65552'; Title = 'DOMAIN\Administrator'; Description = 'Administrator'; Privileges = 1; };
+		$user2 = [PSCustomObject]@{ Id = 'tcm:0-13-65552'; Title = 'DOMAIN\User02'; Description = 'User 02'; Privileges = 0;};
+		$group1 = [PSCustomObject]@{ Id = 'tcm:0-2-65568'; Title = 'System Administrator'; Description = 'SDL Web Content Manager Administrators'};
+		$group2 = [PSCustomObject]@{ Id = 'tcm:0-4-65568'; Title = 'Information Designer'; Description = 'Information Designer'};
+		
+		$existingItems = @{
+			$user1.Id = $user1;
+			$user2.Id = $user2;
+			$group1.Id = $group1;
+			$group2.Id = $group2;
+		};
+		
+		
+		# ***********************
+		# Mocks
+		# ***********************
+		Mock _Get-CurrentUser {
+			return $user1;
+		}
+		Mock _Get-TridionUsers {
+			return @($user1, $user2);
+		}
+		Mock _Get-TridionGroups {
+			return @($group1, $group2);
+		}
+		Mock _Get-DefaultData { 
+			$result = [PSCustomObject]@{ Id = 'tcm:0-0-0'; Title = $Title; _ItemType = $ItemType};
+			return $result; 
+		}
+		Mock _Get-SystemWideList {
+			if ($filter.GetType().Name -eq 'UsersFilterData')
+			{
+				return @($user1, $user2);
+			}
+			if ($filter.GetType().Name -eq 'GroupsFilterData')
+			{
+				return @($group1, $group2);
+			}			
+		}
+		Mock _Get-Item {
+			if ($Id -in $existingItems.Keys)
+			{
+				return $existingItems[$Id];
+			}
+			
+			throw "Item does not exist";
+		}
+		Mock _Save-Item { 
+			$publicationId = 0;
+			$itemType = $Item._ItemType;
+			
+			switch($itemType)
+			{
+				65552 {}
+				65568 {}
+				default { throw "Unexpected item type: $itemType"; }
+			}
+			
+			$random = Get-Random -Minimum 10 -Maximum 500;
+			$Item.Id ="tcm:$publicationId-$random-$itemType";
+			return $Item;
+		}
+		Mock _Test-Item { return ($Id -in $existingItems.Keys); }			
+		Mock _Remove-Item { if (!$Id -in $existingItems.Keys) { throw "Item does not exist." } }
+		Mock Close-TridionCoreServiceClient {}
+		Mock Get-TridionCoreServiceClient { return [PSCustomObject]@{}; }
+		
+		
+		# ***********************
+		# Tests
+		# ***********************
+		Context "Get-TridionUser" {
+			It "validates input parameters" {
+				{ Get-TridionUser -Id $null } | Should Throw;
+				{ Get-TridionUser -Id '' } | Should Throw;
+				{ Get-TridionUser -Id 'tcm:0-12-1' } | Should Throw;
+			}
+			
+			It "disposes the client after use" {
+				Get-TridionUser -Id $user1.Id | Out-Null;
+				Assert-MockCalled Close-TridionCoreServiceClient -Times 1 -Scope It;
+			}
+			
+			It "supports look-up by ID" {
+				$user = Get-TridionUser -Id $user1.Id;
+				Assert-MockCalled _Get-Item -Times 1 -Scope It;
+				$user | Should Be $user1;
+			}
+			
+			It "supports look-up by title" {
+				$user = Get-TridionUser -Title $user1.Title;
+				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
+				$user | Should Be $user1;
+			}
+			
+			It "returns the current user" {
+				$user = Get-TridionUser -Current;
+				Assert-MockCalled _Get-CurrentUser -Times 1 -Scope It;
+				$user | Should Be $user1;
+			}
+			
+			It "handles items that do not exist" {
+				Get-TridionUser -Id 'tcm:0-99-65552' | Should Be $null;
+				Get-TridionUser -Id 'tcm:0-0-0' | Should Be $null;
+			}
+			
+			It "supports piping in the filter" {
+				$titles = @({ $_.Title -eq $user1.Title}, {$_.Description -eq $user2.Description});
+				$users = ($titles | Get-TridionUser);
+				
+				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _Test-Item -Times 0 -Scope It;
+				Assert-MockCalled _Get-Item -Times 0 -Scope It;
+				
+				$users.Count | Should Be 2;
+				$users[0] | Should Be $user1;
+				$users[1] | Should Be $user2;
+			}
+			
+			It "supports piping in the filter as object" {
+				$filter = { $_.Privileges -eq 1 };
+				$user = ($filter | Get-TridionUser);
+				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
+				$user | Should Be $user1;
+			}
+			
+			It "supports piping in the ID by property name" {
+				$testInput = [PSCustomObject]@{ Id = $user1.Id };
+				$user = ($testInput | Get-TridionUser);
+				Assert-MockCalled _Get-Item -Times 1 -Scope It -ParameterFilter { $Id -eq $user1.Id };
+				$user | Should Be $user1;
+			}
+			
+			It "supports piping in the title by property name" {
+				$testInput = [PSCustomObject]@{ Title = $user1.Title };
+				$users = ($testInput | Get-TridionUser);
+				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _Test-Item -Times 0 -Scope It;
+				Assert-MockCalled _Get-Item -Times 0 -Scope It;
+				$users | Should Be $user1;
+			}
+			
+			It "supports piping in the description by property name" {
+				$testInput = [PSCustomObject]@{ Description = $user1.Description};
+				$users = ($testInput | Get-TridionUser -Verbose);
+				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _Test-Item -Times 0 -Scope It;
+				Assert-MockCalled _Get-Item -Times 0 -Scope It;
+				
+				$users | Should Be $user1;
+			}
+		}
+	}
+}

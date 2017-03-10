@@ -43,13 +43,13 @@ Function _Get-CoreServiceBinding
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Transport;
 			$binding.Security.Transport.ClientCredentialType = (_Get-ClientCredentialType -DefaultValue "Windows")
 		}
-		"BASIC"
+		"Basic"
 		{
 			$binding = New-Object System.ServiceModel.BasicHttpBinding;
 			$binding.Security.Mode = [System.ServiceModel.BasicHttpSecurityMode]::TransportCredentialOnly;
 			$binding.Security.Transport.ClientCredentialType = (_Get-ClientCredentialType -DefaultValue "Windows")
 		}
-		"BASIC-SSL"
+		"Basic-SSL"
 		{
 			$binding = New-Object System.ServiceModel.BasicHttpsBinding;
 			$binding.Security.Mode = [System.ServiceModel.BasicHttpsSecurityMode]::Transport;
@@ -74,34 +74,26 @@ Function _New-AssemblyInstance($instanceTypeName, $binding, $endpoint)
 	return [Activator]::CreateInstance($instanceTypeName, $binding, $endpoint);
 }
 
-Function _Get-ClientCredentialType
+Function _Get-ClientCredentialType($DefaultValue)
 {
-	[CmdletBinding()]
-	Param(
-		[string]$DefaultValue
-	)
-	Process{
-		$settings = Get-TridionCoreServiceSettings
-		if ($settings.CredentialType -eq 'Default')
-		{
-			return $DefaultValue
-		}
-	  else
-		{
-			return $settings.CredentialType
-		}
-  }
+	$settings = Get-TridionCoreServiceSettings;
+
+	if ($settings.CredentialType -eq 'Default')
+	{
+		return $DefaultValue;
+	}
+
+	return $settings.CredentialType;
 }
+
 Function _Set-Credential($client, $credential)
 {
 	$userName = $credential.UserName;
-	Write-Verbose "Connecting as $userName..."
 	$client.ClientCredentials.Windows.ClientCredential = [System.Net.NetworkCredential]$credential;
 }
 
 Function _Set-ImpersonateUser($client, $userName)
 {
-	Write-Verbose "Impersonating '$userName'...";
 	$client.Impersonate($userName) | Out-Null;
 }
 
@@ -186,8 +178,8 @@ Function Get-TridionCoreServiceClient
 			{
 				_Set-Credential $proxy $serviceInfo.Credential;
 
-        if ($binding.Security.Transport.ClientCredentialType -eq "Basic")
-        {
+				if ($binding.Security.Transport.ClientCredentialType -eq "Basic")
+				{
 					if ($proxy.ClientCredentials.Windows.ClientCredential.Domain)
 					{
 						$fullUsername = "{0}\{1}" -f $proxy.ClientCredentials.Windows.ClientCredential.Domain, $proxy.ClientCredentials.Windows.ClientCredential.Username

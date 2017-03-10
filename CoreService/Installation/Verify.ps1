@@ -8,7 +8,7 @@ function VerifyInstallation
 		Import-Module Tridion-CoreService;
 	}
 	
-	$user = Get-TridionUser -ErrorAction SilentlyContinue
+	$user = Get-TridionUser -Current -ErrorAction SilentlyContinue
 	if ($user)
 	{
 		Write-Host "Everything appears to be working fine." -Foreground Green;

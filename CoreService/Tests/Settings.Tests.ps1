@@ -22,6 +22,7 @@ Function VerifyDefaultSettings($settings, $excludingProperties = @())
 	if ($excludingProperties -notcontains "ConnectionSendTimeout") { $settings.ConnectionSendTimeout | Should Be "00:01:00"; }
 	if ($excludingProperties -notcontains "HostName") { $settings.HostName | Should Be "localhost"; }
 	if ($excludingProperties -notcontains "Credential") { $settings.Credential | Should Be $null; }
+	if ($excludingProperties -notcontains "CredentialType") { $settings.CredentialType | Should Be 'Default'; }
 	if ($excludingProperties -notcontains "Version") { $settings.Version | Should Be "2011-SP1"; }
 	if ($excludingProperties -notcontains "ConnectionType") { $settings.ConnectionType | Should Be "Default"; }
 	if ($excludingProperties -notcontains "ModuleVersion") { $settings.ModuleVersion | Should Be $moduleVersion; }
@@ -29,7 +30,7 @@ Function VerifyDefaultSettings($settings, $excludingProperties = @())
 
 Function SetToNonDefaultSettingsAndVerify
 {
-	$returnValue = Set-TridionCoreServiceSettings -HostName "invalid" -Version '2013-SP1' -ConnectionType netTcp -ConnectionSendTimeout 00:00:55 -Credential (GetTestCredential) -PassThru;
+	$returnValue = Set-TridionCoreServiceSettings -HostName "invalid" -Version '2013-SP1' -ConnectionType netTcp -ConnectionSendTimeout 00:00:55 -Credential (GetTestCredential) -CredentialType 'Basic' -PassThru;
 	$stored = Get-TridionCoreServiceSettings;
 	
 	# Validate that both the return value from the method and the object returned by Get-TridionCoreServiceSettings have the expected values
@@ -41,6 +42,7 @@ Function SetToNonDefaultSettingsAndVerify
 		$settingsObject.ConnectionSendTimeout | Should Be "00:00:55";
 		$settingsObject.HostName | Should Be "invalid";
 		$settingsObject.Credential | Should Not Be $null;
+		$settingsObject.CredentialType | Should Be 'Basic';
 		$settingsObject.Version | Should Be "2013-SP1";
 		$settingsObject.ConnectionType | Should Be "netTcp";
 		$settingsObject.ModuleVersion | Should Be $moduleVersion;
@@ -102,7 +104,7 @@ Describe "Core Service Settings Tests" {
 			{ Set-TridionCoreServiceSettings -ConnectionType 'FakeConnectionType' } | Should Throw;
 			{ Set-TridionCoreServiceSettings -ConnectionSendTimeout 'FakeConnectionSendTimeout' } | Should Throw;
 
-			$validConnectionTypes = @('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp');
+			$validConnectionTypes = @('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp', 'Basic', 'Basic-SSL');
 			foreach ($connectionType in $validConnectionTypes)
 			{
 				(Set-TridionCoreServiceSettings -ConnectionType $connectionType -PassThru).ConnectionType | Should Be $connectionType;
@@ -186,6 +188,15 @@ Describe "Core Service Settings Tests" {
 			$settings.Credential | Should Be $testCredential;
 		}
 
+		It "updates CredentialType only" {
+			# Change the CredentialType only
+			$settings = Set-TridionCoreServiceSettings -CredentialType 'Basic' -PassThru;
+			
+			# Verify that only the relevant settings have changed
+			VerifyDefaultSettings -settings $settings -excludingProperties @('CredentialType', 'ClassName');
+			$settings.CredentialType | Should Be 'Basic';
+		}
+
 		It "updates Version only" {
 			# Change the Credential only
 			$settings = Set-TridionCoreServiceSettings -Version 'Web-8.1' -PassThru;
@@ -196,9 +207,41 @@ Describe "Core Service Settings Tests" {
 			$settings.EndpointUrl | Should Be 'http://localhost/webservices/CoreService201501.svc/wsHttp';
 			$settings.AssemblyPath | Should Be (Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_1.dll');
 		}
+
+		It "updates AssemblyPath automatically" {
+			$settings = Set-TridionCoreServiceSettings -Version 'Web-8.1' -CredentialType 'Basic' -ConnectionType 'Basic' -PassThru;
+			VerifyDefaultSettings -settings $settings -excludingProperties @('Version', 'EndpointUrl', 'AssemblyPath', 'ConnectionType', 'CredentialType', 'ClassName');
+			$settings.Version | Should Be 'Web-8.1';
+			$settings.EndpointUrl | Should Be 'http://localhost/webservices/CoreService201501.svc/basicHttp';
+			$settings.AssemblyPath | Should Be (Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_1.dll');
+			$settings.CredentialType | Should Be 'Basic';
+			$settings.ClassName | Should Be ('Tridion.ContentManager.CoreService.Client.CoreServiceClient');
+			
+			$settings = Set-TridionCoreServiceSettings -Version '2013-SP1' -CredentialType 'Windows' -ConnectionType 'netTcp' -PassThru;
+			VerifyDefaultSettings -settings $settings -excludingProperties @('Version', 'EndpointUrl', 'AssemblyPath', 'ConnectionType', 'CredentialType', 'ClassName');
+			$settings.Version | Should Be '2013-SP1';
+			$settings.EndpointUrl | Should Be 'net.tcp://localhost:2660/CoreService/2013/netTcp';
+			$settings.AssemblyPath | Should Be (Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.2013sp1.dll');
+			$settings.CredentialType | Should Be 'Windows';
+			$settings.ClassName | Should Be ('Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient');
+		}
+
+		It "updates ClassName automatically" {
+			$settings = Set-TridionCoreServiceSettings -ConnectionType 'Basic' -PassThru;
+			VerifyDefaultSettings -settings $settings -excludingProperties @('ConnectionType', 'ClassName', 'EndpointUrl');
+			$settings.ConnectionType | Should Be 'Basic';
+			$settings.ClassName | Should Be 'Tridion.ContentManager.CoreService.Client.CoreServiceClient';
+			$settings.EndpointUrl | Should Be 'http://localhost/webservices/CoreService2011.svc/basicHttp';
+
+			$settings = Set-TridionCoreServiceSettings -ConnectionType 'Default' -PassThru;
+			VerifyDefaultSettings -settings $settings -excludingProperties @('ConnectionType', 'ClassName');
+			$settings.ConnectionType | Should Be 'Default';
+			$settings.ClassName | Should Be 'Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient';
+			$settings.EndpointUrl | Should Be 'http://localhost/webservices/CoreService2011.svc/wsHttp';
+		}
 		
 		It "updates EndpointUrl automatically" {
-			# Test URLs hosted in IIS first
+			# Test wsHttp endpoints
 			$relativeUrls = @{
 				'2011-SP1' = 'localhost/webservices/CoreService2011.svc/wsHttp';
 				'2013' = 'localhost/webservices/CoreService2012.svc/wsHttp';
@@ -216,6 +259,24 @@ Describe "Core Service Settings Tests" {
 				(Set-TridionCoreServiceSettings -Version $version -ConnectionType 'LDAP' -PassThru).EndpointUrl | Should Be "http://$relativeUrl";
 				(Set-TridionCoreServiceSettings -Version $version -ConnectionType 'SSL' -PassThru).EndpointUrl | Should Be "https://$relativeUrl";
 				(Set-TridionCoreServiceSettings -Version $version -ConnectionType 'LDAP-SSL' -PassThru).EndpointUrl | Should Be "https://$relativeUrl";
+			}
+				
+			# Test basicHttp endpoints
+			$relativeUrls = @{
+				'2011-SP1' = 'localhost/webservices/CoreService2011.svc/basicHttp';
+				'2013' = 'localhost/webservices/CoreService2012.svc/basicHttp';
+				'2013-SP1' = 'localhost/webservices/CoreService2013.svc/basicHttp';
+				'Web-8.1' = 'localhost/webservices/CoreService201501.svc/basicHttp';
+				'Web-8.5' = 'localhost/webservices/CoreService201603.svc/basicHttp';
+			}
+				
+			foreach ($entry in $relativeUrls.GetEnumerator())
+			{
+				$version= $entry.Name;
+				$relativeUrl = $entry.Value;
+				
+				(Set-TridionCoreServiceSettings -Version $version -ConnectionType 'Basic' -PassThru).EndpointUrl | Should Be "http://$relativeUrl";
+				(Set-TridionCoreServiceSettings -Version $version -ConnectionType 'Basic-SSL' -PassThru).EndpointUrl | Should Be "https://$relativeUrl";
 			}
 				
 			# Test URLs hosted by the Service Host (netTcp)

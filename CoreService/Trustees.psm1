@@ -2,6 +2,37 @@
 
 <#
 **************************************************
+* Private members
+**************************************************
+#>
+
+. (Join-Path $PSScriptRoot 'Utilities.ps1')
+
+Function _Get-CurrentUser($Client)
+{
+	return $Client.GetCurrentUser();
+}
+
+Function _Get-TridionUsers($Client, $IncludePredefinedUsers)
+{
+	$filter = New-Object Tridion.ContentManager.CoreService.Client.UsersFilterData;
+	if (-not $IncludePredefinedUsers)
+	{
+		$filter.IsPredefined = $false;
+	}
+	return $Client.GetSystemWideList($filter);
+}
+
+Function _Get-TridionGroups($Client)
+{
+	$filter = New-Object Tridion.ContentManager.CoreService.Client.GroupsFilterData;
+	return $Client.GetSystemWideList($filter);
+}
+
+
+
+<#
+**************************************************
 * Public members
 **************************************************
 #>
@@ -14,7 +45,7 @@ function Get-TridionUser
 
     .Description
     Gets a UserData object containing information about the specified user within Tridion. 
-    If called without any parameters, the currently logged on user will be returned.
+    If called without any parameters, a list of all users will be returned.
 
     .Notes
     Example of properties available: Title, IsEnabled, LanguageId, LocaleId, Privileges (system administrator = 1), etc.
@@ -26,7 +57,7 @@ function Get-TridionUser
     None.
 
     .Outputs
-    Returns an object of type [Tridion.ContentManager.CoreService.Client.UserData].
+    Returns an array of objects of type [Tridion.ContentManager.CoreService.Client.UserData].
 
     .Link
     Get the latest version of this script from the following URL:
@@ -45,11 +76,15 @@ function Get-TridionUser
     Returns information about user #11 within Tridion (typically the Administrator user created during installation).
     
     #>
-    [CmdletBinding(DefaultParameterSetName='ById')]
+    [CmdletBinding(DefaultParameterSetName='ByFilter')]
     Param
     (
-		# The TCM URI of the user to load. If omitted, data for the current user is loaded instead.
-        [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
+		# Filtering script block
+        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByFilter', Position=0)]
+        [ScriptBlock]$Filter,
+		
+		# The TCM URI of the user to load.
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Id,
 
@@ -58,69 +93,76 @@ function Get-TridionUser
 		[ValidateNotNullOrEmpty()]
         [string]$Title,
 		
-		# The description of the user to load.
+		# The name (including domain) of the user to load.
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByDescription', Position=0)]
 		[ValidateNotNullOrEmpty()]
-        [string]$Description
+        [string]$Description,
+		
+		# Only return the currently logged on user.
+        [Parameter(Mandatory=$true, ParameterSetName='CurrentUser', Position=0)]
+		[switch]$Current
     )
 
 	Begin
 	{
-        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$verboseRequested = ($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:$verboseRequested;
+		$userCache = $null;
+		$filterScript = $null;
 	}
     
     Process
     {
 		switch($PsCmdlet.ParameterSetName)
 		{
+			'CurrentUser'
+			{
+				Write-Verbose "Loading current user...";
+				return _Get-CurrentUser $client;
+			}
+			
 			'ById' 
 			{
-				if (-not $Id)
-				{
-					Write-Verbose "Loading current user...";
-					return $client.GetCurrentUser();
-				}
+				$itemId = _Get-IdFromInput $Id;
+				if (_Test-NullUri($itemId)) { return $null; }
+				_Assert-ItemType $itemId 65552;
 				
-				if (!$Id.EndsWith('-65552'))
+				Write-Verbose "Loading user with ID '$itemId'...";
+				if (_Test-Item $client $itemId)
 				{
-					Write-Error "'$Id' is not a valid User URI.";
-					return;
+					return _Get-Item $client $itemId;
 				}
-
-				Write-Verbose "Loading User with ID '$Id'..."
-				$result = Get-TridionItem $Id -ErrorAction SilentlyContinue;
-				if (-not $result)
-				{
-					Write-Error "User '$Id' does not exist.";
-					return $null;
-				}
-				return $result;
+				return $null;
 			}
 			
 			'ByTitle'
 			{
-				Write-Verbose "Loading User with title '$Title'..."
-				$result = Get-TridionUsers | ?{$_.Title -eq $Title} | Select -First 1;
-				if (-not $result)
-				{
-					Write-Error "There is no User named '$Title'.";
-					return $null;
-				}
-				return $result;
+				$filterScript = { $_.Title -like $Title };
 			}
-
+			
 			'ByDescription'
 			{
-				Write-Verbose "Loading User with description '$Description'..."
-				$result = Get-TridionUsers | ?{$_.Description -eq $Description} | Select -First 1;
-				if (-not $result)
-				{
-					Write-Error "There is no User with a description of '$Description'.";
-					return $null;
-				}
-				return $result;
+				$filterScript = { $_.Description -like $Description };
+			}
+			
+			'ByFilter'
+			{
+				$filterScript = $Filter;
 			}
 		}
+
+		
+		if ($userCache -eq $null)
+		{
+			$userCache = _Get-TridionUsers $client $false;
+		}
+		
+		$users = $userCache;
+		if ($filterScript)
+		{
+			return $users | Where-Object $filterScript;
+		}
+		return $users;
     }
 	
 	End
@@ -163,17 +205,21 @@ function Get-TridionGroup
     Returns information about the Group named 'Editor'.
     
     #>
-    [CmdletBinding(DefaultParameterSetName='ById')]
+    [CmdletBinding(DefaultParameterSetName='ByTitle')]
     Param
     (
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Id,
 
-        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
-		[ValidateNotNullOrEmpty()]
+        [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
         [string]$Title
     )
+	
+	Begin
+	{
+        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
 	
 	Process
 	{
@@ -181,151 +227,26 @@ function Get-TridionGroup
 		{
 			'ById' 
 			{
-				if (!$Id.EndsWith('-65568'))
-				{
-					Write-Error "'$Id' is not a valid Group URI.";
-					return;
-				}
+				_Assert-ItemType $Id 65568;
 
 				Write-Verbose "Loading Tridion Group with ID '$Id'..."
-				$result = Get-TridionItem $Id -ErrorAction SilentlyContinue;
-				if (-not $result)
-				{
-					Write-Error "Group '$Id' does not exist.";
-					return $null;
-				}
-				return $result;
+				return _Get-Item $client $Id;
 			}
 			
 			'ByTitle'
 			{
-				Write-Verbose "Loading Tridion Group with title '$Title'..."
-				$result = Get-TridionGroups | ?{$_.Title -eq $Title} | Select -First 1;
-				if (-not $result)
+				Write-Verbose "Loading Tridion Groups with title '$Title'..."
+				$result = _Get-TridionGroups $client;
+
+				if ($Title)
 				{
-					Write-Error "There is no Group named '$Title'.";
-					return $null;
+					return $result | ?{$_.Title -like $Title};
 				}
 				return $result;
 			}
 		}
 	}
-}
 
-Function Get-TridionUsers
-{
-    <#
-    .Synopsis
-    Gets a list of users within Tridion Content Manager.
-
-    .Description
-    Gets a list of users within Tridion Content Manager. 
-
-    .Notes
-    Example of properties available: Id, Title, IsEnabled, etc.
-    
-    For a full list, consult the Content Manager Core Service API Reference Guide documentation 
-    (Tridion.ContentManager.Data.Security.UserData object)
-
-    .Inputs
-    None.
-
-    .Outputs
-    Returns a list of objects of type [Tridion.ContentManager.CoreService.Client.UserData].
-
-    .Link
-    Get the latest version of this script from the following URL:
-    https://github.com/pkjaer/tridion-powershell-modules
-
-    .Example
-    Get-TridionUsers
-    Gets a list of all users specifically added to the system (excludes predefined users like 'NT AUTHORITY\SYSTEM').
-    
-    .Example
-    Get-TridionUsers -IncludePredefinedUsers | Select-Object Id,Title,IsEnabled
-    Gets the ID, Title, and enabled status of all users.
-    
-    .Example
-    Get-TridionUsers | Where-Object { $_.IsEnabled -eq $false } | Select-Object Id,Title,IsEnabled | Format-List
-    Gets the ID, Title, and enabled status of all disabled users in the system.
-    Displays all of the properties as a list.
-    
-    #>
-    [CmdletBinding()]
-    Param
-    (
-		# If set, the list of users will include pre-defined system users like 'NT AUTHORITY\SYSTEM' and 'MTSUser'.
-        [Parameter()]
-        [switch]$IncludePredefinedUsers
-    )
-	
-	Begin
-	{
-        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
-	}
-	
-    Process
-    {
-        if ($client -ne $null)
-        {
-			Write-Verbose "Getting a list of Tridion users.";
-			$filter = New-Object Tridion.ContentManager.CoreService.Client.UsersFilterData;
-			if (-not $IncludePredefinedUsers)
-			{
-				$filter.IsPredefined = $false;
-			}
-			$client.GetSystemWideList($filter);
-        }
-    }
-	
-	End
-	{
-		Close-TridionCoreServiceClient $client;
-	}
-}
-
-Function Get-TridionGroups
-{
-    <#
-    .Synopsis
-    Gets a list of groups within Tridion Content Manager.
-
-    .Description
-    Gets a list of groups within Tridion Content Manager. 
-
-    .Inputs
-    None.
-
-    .Outputs
-    Returns a list of objects of type [Tridion.ContentManager.CoreService.Client.TrusteeData].
-
-    .Link
-    Get the latest version of this script from the following URL:
-    https://github.com/pkjaer/tridion-powershell-modules
-	
-    .Example
-    Get-TridionGroups
-    Gets all groups.
-    
-    #>
-    [CmdletBinding()]
-	PARAM()
-	
-	Begin
-	{
-        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
-	}
-	
-    Process
-    {
-        if ($client -ne $null)
-        {
-			Write-Verbose "Getting a list of Tridion groups.";
-			$filter = New-Object Tridion.ContentManager.CoreService.Client.GroupsFilterData;
-			$client.GetSystemWideList($filter);
-        }
-    }
-	
 	End
 	{
 		Close-TridionCoreServiceClient $client;
@@ -830,10 +751,11 @@ function Enable-TridionUser
 * Export statements
 **************************************************
 #>
+Set-Alias -Name Get-TridionUsers -Value Get-TridionUser
+Set-Alias -Name Get-TridionGroups -Value Get-TridionGroup
+
 Export-ModuleMember Get-TridionUser
-Export-ModuleMember Get-TridionUsers
 Export-ModuleMember Get-TridionGroup
-Export-ModuleMember Get-TridionGroups
 Export-ModuleMember New-TridionGroup
 Export-ModuleMember New-TridionUser
 Export-ModuleMember Disable-TridionUser
