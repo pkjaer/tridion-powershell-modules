@@ -164,14 +164,13 @@ Function Get-TridionCoreServiceClient
         # Load information about the Core Service client available on this system
         $serviceInfo = Get-TridionCoreServiceSettings
         
-        Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.EndpointUrl);
+        Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.HostName);
         
         # Load the Core Service Client
         $endpoint = New-Object System.ServiceModel.EndpointAddress -ArgumentList $serviceInfo.EndpointUrl
         $binding = _Get-CoreServiceBinding;
 
         #Load the assembly without locking the file
-        Write-Verbose ("Loading assembly {0}" -f $serviceInfo.AssemblyPath) 
 		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
 		if (!$assemblyBytes) { throw "Unable to load the assembly at: " + $serviceInfo.AssemblyPath; }
         $assembly = [Reflection.Assembly]::Load($assemblyBytes);
