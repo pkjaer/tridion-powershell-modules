@@ -91,7 +91,8 @@ function Get-TridionUser
 		# The name (including domain) of the user to load.
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
 		[ValidateNotNullOrEmpty()]
-        [string]$Title,
+		[Alias('Title')]
+        [string]$Name,
 		
 		# The name (including domain) of the user to load.
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByDescription', Position=0)]
@@ -137,7 +138,7 @@ function Get-TridionUser
 			
 			'ByTitle'
 			{
-				$filterScript = { $_.Title -like $Title };
+				$filterScript = { $_.Title -like $Name };
 			}
 			
 			'ByDescription'
@@ -213,7 +214,8 @@ function Get-TridionGroup
         [string]$Id,
 
         [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
-        [string]$Title
+		[Alias('Title')]
+        [string]$Name
     )
 	
 	Begin
@@ -235,12 +237,12 @@ function Get-TridionGroup
 			
 			'ByTitle'
 			{
-				Write-Verbose "Loading Tridion Groups with title '$Title'..."
+				Write-Verbose "Loading Tridion Groups named '$Name'..."
 				$result = _Get-TridionGroups $client;
 
-				if ($Title)
+				if ($Name)
 				{
-					return $result | ?{$_.Title -like $Title};
+					return $result | ?{$_.Title -like $Name};
 				}
 				return $result;
 			}
@@ -308,6 +310,7 @@ function New-TridionGroup
 			# The name of the new Group. This is displayed to end-users.
             [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
 			[ValidateNotNullOrEmpty()]
+			[Alias('Title')]
             [string]$Name,
             
 			# The description of the new Group. Generally used to indicate the purpose of the group. 
@@ -754,9 +757,4 @@ function Enable-TridionUser
 Set-Alias -Name Get-TridionUsers -Value Get-TridionUser
 Set-Alias -Name Get-TridionGroups -Value Get-TridionGroup
 
-Export-ModuleMember Get-TridionUser
-Export-ModuleMember Get-TridionGroup
-Export-ModuleMember New-TridionGroup
-Export-ModuleMember New-TridionUser
-Export-ModuleMember Disable-TridionUser
-Export-ModuleMember Enable-TridionUser
+Export-ModuleMember -Function Get-Tridion*, New-Tridion*, Disable-Tridion*, Enable-Tridion* -Alias *

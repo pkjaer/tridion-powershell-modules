@@ -51,7 +51,7 @@ Describe "Core Service Item Tests" {
 		# Mocks
 		# ***********************
 		Mock _Get-DefaultData { 
-			$result = [PSCustomObject]@{ Id = 'tcm:0-0-0'; Title = $Title; _ItemType = $ItemType};
+			$result = [PSCustomObject]@{ Id = 'tcm:0-0-0'; Title = $Name; _ItemType = $ItemType};
 			
 			switch($ItemType) 
 			{
@@ -171,14 +171,14 @@ Describe "Core Service Item Tests" {
 				$publication | Should Be $publication1;
 			}
 			
-			It "supports look-up by title" {
-				$publication = Get-TridionPublication -Title $publication1.Title;
+			It "supports look-up by name" {
+				$publication = Get-TridionPublication -Name $publication1.Title;
 				Assert-MockCalled _Get-SystemWideList -Times 1 -Scope It;
 				$publication | Should Be $publication1;
 			}
 			
-			It "supports look-up by partial title" {
-				$publications = Get-TridionPublication -Title 'Publication *';
+			It "supports look-up by partial name" {
+				$publications = Get-TridionPublication -Name 'Publication *';
 				Assert-MockCalled _Get-SystemWideList -Times 1 -Scope It;
 				$publications[0] | Should Be $publication1;
 				$publications[1] | Should Be $publication2;
@@ -190,9 +190,9 @@ Describe "Core Service Item Tests" {
 				$publications | Should Be @($publication3, $publication4);
 			}
 			
-			It "supports expanding properties in list by title" {
+			It "supports expanding properties in list by name" {
 				# A list will typically only load partial data
-				$publication = Get-TridionPublication -Title $publication2.Title -ExpandProperties;
+				$publication = Get-TridionPublication -Name $publication2.Title -ExpandProperties;
 				Assert-MockCalled _Get-SystemWideList -Times 1 -Scope It;
 				Assert-MockCalled _Get-Item -Times 1 -Scope It;
 				$publication | Should Be $publication2;
@@ -255,6 +255,12 @@ Describe "Core Service Item Tests" {
 				Assert-MockCalled _Get-SystemWideList -Times 1 -Scope It;
 				$publications | Should Be $allPublications;
 			}
+			
+			It "has aliases for backwards-compatibility (-Title => -Name)" {
+				$publication = Get-TridionPublication -Title $publication1.Title;
+				Assert-MockCalled _Get-SystemWideList -Times 1 -Scope It;
+				$publication | Should Be $publication1;
+			}
 		}
 
 		Context "Get-TridionPublicationTarget" {
@@ -277,7 +283,7 @@ Describe "Core Service Item Tests" {
 			}
 			
 			It "supports look-up by title" {
-				$target = Get-TridionPublicationTarget -Title $target1.Title;
+				$target = Get-TridionPublicationTarget -Name $target1.Title;
 				Assert-MockCalled _Get-SystemWideList -Times 1 -Scope It;
 				$target | Should Be $target1;
 			}
@@ -290,7 +296,7 @@ Describe "Core Service Item Tests" {
 			
 			It "supports expanding properties in list" {
 				# A list will typically only load partial data
-				$target = Get-TridionPublicationTarget -Title $target2.Title -ExpandProperties;
+				$target = Get-TridionPublicationTarget -Name $target2.Title -ExpandProperties;
 				Assert-MockCalled _Get-SystemWideList -Times 1 -Scope It;
 				Assert-MockCalled _Get-Item -Times 1 -Scope It;
 				$target | Should Be $target2;
@@ -333,26 +339,32 @@ Describe "Core Service Item Tests" {
 				Assert-MockCalled _Get-SystemWideList -Times 1 -Scope It;
 				$targets | Should Be @($target1, $target2);
 			}
+			
+			It "has aliases for backwards-compatibility (-Title => -Name)" {
+				$target = Get-TridionPublicationTarget -Title $target1.Title;
+				Assert-MockCalled _Get-SystemWideList -Times 1 -Scope It;
+				$target | Should Be $target1;
+			}
 		}
 
 		Context "New-TridionItem" {
 			It "validates input parameters" {
-				{ New-TridionItem -ItemType $null -Title 'Test'} | Should Throw 'Invalid item type: 0';
-				{ New-TridionItem -ItemType -1 -Title 'Test'} | Should Throw 'Invalid item type: -1';
-				{ New-TridionItem -ItemType 0 -Title 'Test'} | Should Throw 'Invalid item type: 0';
-				{ New-TridionItem -ItemType 3 -Title 'Test'} | Should Throw 'Invalid item type: 3';
-				{ New-TridionItem -ItemType 1 -Title $null} | Should Throw;
+				{ New-TridionItem -ItemType $null -Name 'Test'} | Should Throw 'Invalid item type: 0';
+				{ New-TridionItem -ItemType -1 -Name 'Test'} | Should Throw 'Invalid item type: -1';
+				{ New-TridionItem -ItemType 0 -Name 'Test'} | Should Throw 'Invalid item type: 0';
+				{ New-TridionItem -ItemType 3 -Name 'Test'} | Should Throw 'Invalid item type: 3';
+				{ New-TridionItem -ItemType 1 -Name $null} | Should Throw;
 			}
 			
 			It "disposes the client after use" {
-				New-TridionItem -ItemType 64 -Title 'Testing Dispose' | Out-Null;
+				New-TridionItem -ItemType 64 -Name 'Testing Dispose' | Out-Null;
 				Assert-MockCalled Close-TridionCoreServiceClient -Times 1 -Scope It;
 			}
 			
 			It "creates a new Page" {
 				$itemTitle = 'My New Page';
-				$item = New-TridionItem -ItemType 64 -Title $itemTitle -Parent $sg1.Id;
-				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 64) -and ($Title -eq $itemTitle) -and ($Parent -eq $sg1.Id) };
+				$item = New-TridionItem -ItemType 64 -Name $itemTitle -Parent $sg1.Id;
+				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 64) -and ($Name -eq $itemTitle) -and ($Parent -eq $sg1.Id) };
 				Assert-MockCalled _Save-Item -Times 1 -Scope It;
 				$item.Title | Should Be $itemTitle;
 				$item.Id.StartsWith('tcm:1-') | Should Be $true;
@@ -361,28 +373,38 @@ Describe "Core Service Item Tests" {
 
 			It "supports piping in the parent" {
 				$itemTitle = 'Testing pipeline parent';
-				$item = (Get-TridionItem -Id $folder1.Id | New-TridionItem -ItemType 2 -Title $itemTitle);
-				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { $ItemType -eq 2 -and $Title -eq $itemTitle -and $Parent -eq $folder1.Id };
+				$item = (Get-TridionItem -Id $folder1.Id | New-TridionItem -ItemType 2 -Name $itemTitle);
+				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { $ItemType -eq 2 -and $Name -eq $itemTitle -and $Parent -eq $folder1.Id };
 				Assert-MockCalled _Save-Item -Times 1 -Scope It;
 				$item.Title | Should Be $itemTitle;
+			}
+			
+			It "has aliases for backwards-compatibility (-Title => -Name)" {
+				$itemTitle = 'Testing Title alias for Name';
+				$item = New-TridionItem -ItemType 64 -Title $itemTitle -Parent $sg1.Id;
+				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 64) -and ($Name -eq $itemTitle) -and ($Parent -eq $sg1.Id) };
+				Assert-MockCalled _Save-Item -Times 1 -Scope It;
+				$item.Title | Should Be $itemTitle;
+				$item.Id.StartsWith('tcm:1-') | Should Be $true;
+				_Get-ItemType $item.Id | Should Be 64;
 			}
 		}
 
 		Context "New-TridionPublication" {
 			It "validates input parameters" {
-				{ New-TridionPublication -Title $null} | Should Throw;
-				{ New-TridionPublication -Title ''} | Should Throw;
+				{ New-TridionPublication -Name $null} | Should Throw;
+				{ New-TridionPublication -Name ''} | Should Throw;
 			}
 
 			It "disposes the client after use" {
-				New-TridionPublication -Title 'Testing Dispose' | Out-Null;
+				New-TridionPublication -Name 'Testing Dispose' | Out-Null;
 				Assert-MockCalled Close-TridionCoreServiceClient -Times 1 -Scope It;
 			}
 			
 			It "creates a new Publication with the given title" {
 				$itemTitle = 'Testing creation';
-				$publication = New-TridionPublication -Title $itemTitle;
-				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 1) -and ($Title -eq $itemTitle) -and ($Parent -eq $null) };
+				$publication = New-TridionPublication -Name $itemTitle;
+				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 1) -and ($Name -eq $itemTitle) -and ($Parent -eq $null) };
 				Assert-MockCalled _Save-Item -Times 1 -Scope It -ParameterFilter { ($Item.Title -eq $itemTitle) };
 				$publication.Title | Should Be $itemTitle;
 				$publication.Id.StartsWith('tcm:0-') | Should Be $true;
@@ -391,8 +413,8 @@ Describe "Core Service Item Tests" {
 			
 			It "creates a new Publication with a single parent" {
 				$itemTitle = 'Testing creation with single parent';
-				$publication = New-TridionPublication -Title $itemTitle -Parent $publication1;
-				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 1) -and ($Title -eq $itemTitle) -and ($Parent -eq $null) };
+				$publication = New-TridionPublication -Name $itemTitle -Parent $publication1;
+				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 1) -and ($Name -eq $itemTitle) -and ($Parent -eq $null) };
 				Assert-MockCalled _Save-Item -Times 1 -Scope It -ParameterFilter { ($Item.Title -eq $itemTitle) -and ($Item.Parents.Count -eq 1) };
 				$publication.Title | Should Be $itemTitle;
 				$publication.Id.StartsWith('tcm:0-') | Should Be $true;
@@ -402,8 +424,8 @@ Describe "Core Service Item Tests" {
 			
 			It "creates a new Publication with a multiple parents" {
 				$itemTitle = 'Testing creation with multiple parents';
-				$publication = New-TridionPublication -Title $itemTitle -Parent @($publication1, $publication2);
-				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 1) -and ($Title -eq $itemTitle) -and ($Parent -eq $null) };
+				$publication = New-TridionPublication -Name $itemTitle -Parent @($publication1, $publication2);
+				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 1) -and ($Name -eq $itemTitle) -and ($Parent -eq $null) };
 				Assert-MockCalled _Save-Item -Times 1 -Scope It -ParameterFilter { ($Item.Title -eq $itemTitle) -and ($Item.Parents.Count -eq 2) };
 				$publication.Title | Should Be $itemTitle;
 				$publication.Id.StartsWith('tcm:0-') | Should Be $true;
@@ -414,8 +436,8 @@ Describe "Core Service Item Tests" {
 
 			It "supports piping in the parent" {
 				$itemTitle = 'Testing pipeline parent';
-				$publication = (Get-TridionPublication -Id $publication4.Id | New-TridionPublication -Title $itemTitle);
-				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { $ItemType -eq 1 -and $Title -eq $itemTitle -and $Parent -eq $null };
+				$publication = (Get-TridionPublication -Id $publication4.Id | New-TridionPublication -Name $itemTitle);
+				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { $ItemType -eq 1 -and $Name -eq $itemTitle -and $Parent -eq $null };
 				Assert-MockCalled _Save-Item -Times 1 -Scope It -ParameterFilter { ($Item.Title -eq $itemTitle) -and ($Item.Parents.Count -eq 1) };
 				$publication.Title | Should Be $itemTitle;
 				$publication.Parents[0].IdRef | Should Be $publication4.Id;
@@ -423,8 +445,8 @@ Describe "Core Service Item Tests" {
 
 			It "supports piping in multiple parents" {
 				$itemTitle = 'Testing pipeline parent';
-				$publication = Get-TridionPublication -PublicationType 'Web' | New-TridionPublication -Title $itemTitle;
-				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { $ItemType -eq 1 -and $Title -eq $itemTitle -and $Parent -eq $null };
+				$publication = Get-TridionPublication -PublicationType 'Web' | New-TridionPublication -Name $itemTitle;
+				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { $ItemType -eq 1 -and $Name -eq $itemTitle -and $Parent -eq $null };
 				Assert-MockCalled _Save-Item -Times 1 -Scope It -ParameterFilter { ($Item.Title -eq $itemTitle) -and ($Item.Parents.Count -eq 2) };
 				$publication.Title | Should Be $itemTitle;
 				$publication.Parents[0].IdRef | Should Be $publication3.Id;
@@ -434,13 +456,20 @@ Describe "Core Service Item Tests" {
 			It "has aliases for backwards-compatibility (Parents => Parent)" {
 				$itemTitle = 'Testing creation with multiple parents';
 				$publication = New-TridionPublication -Title $itemTitle -Parents @($publication1, $publication2);
-				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 1) -and ($Title -eq $itemTitle) -and ($Parent -eq $null) };
+				Assert-MockCalled _Get-DefaultData -Times 1 -Scope It -ParameterFilter { ($ItemType -eq 1) -and ($Name -eq $itemTitle) -and ($Parent -eq $null) };
 				Assert-MockCalled _Save-Item -Times 1 -Scope It -ParameterFilter { ($Item.Title -eq $itemTitle) -and ($Item.Parents.Count -eq 2) };
 				$publication.Title | Should Be $itemTitle;
 				$publication.Id.StartsWith('tcm:0-') | Should Be $true;
 				_Get-ItemType $publication.Id | Should Be 1;
 				$publication.Parents[0].IdRef | Should Be $publication1.Id;
 				$publication.Parents[1].IdRef | Should Be $publication2.Id;
+			}
+			
+			It "has aliases for backwards-compatibility (-Title => -Name)" {
+				$itemTitle = 'Testing Title alias for Name';
+				$publication = New-TridionPublication -Title $itemTitle;
+				Assert-MockCalled Close-TridionCoreServiceClient -Times 1 -Scope It;
+				$publication.Title | Should Be $itemTitle;
 			}
 		}
 

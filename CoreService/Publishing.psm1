@@ -344,6 +344,4 @@ function Remove-TridionPublishTransaction
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Publish-TridionItem
-Export-ModuleMember Get-TridionPublishTransaction
-Export-ModuleMember Remove-TridionPublishTransaction
+Export-ModuleMember Publish-Tridion*, Get-Tridion*, Remove-Tridion* -Alias *

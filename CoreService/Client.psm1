@@ -270,5 +270,4 @@ Function Close-TridionCoreServiceClient
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-TridionCoreServiceClient
-Export-ModuleMember Close-TridionCoreServiceClient
+Export-ModuleMember Get-Tridion*, Close-Tridion* -Alias *

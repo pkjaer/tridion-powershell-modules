@@ -266,7 +266,4 @@ Function Remove-TridionApplicationData
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Convert-TridionApplicationData
-Export-ModuleMember Get-TridionApplicationData
-Export-ModuleMember Set-TridionApplicationData
-Export-ModuleMember Remove-TridionApplicationData
+Export-ModuleMember Convert-Tridion*, Get-Tridion*, Set-Tridion*, Remove-Tridion* -Alias *

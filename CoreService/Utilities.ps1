@@ -109,7 +109,7 @@ function _Get-Item($Client, $Id)
 	return $Client.Read($Id, $readOptions);
 }
 
-function _Get-DefaultData($Client, $ItemType, $Parent, $Title = $null)
+function _Get-DefaultData($Client, $ItemType, $Parent, $Name = $null)
 {
 	if ($Client.GetDefaultData.OverloadDefinitions[0].IndexOf('ReadOptions readOptions') -gt 0)
 	{
@@ -121,9 +121,9 @@ function _Get-DefaultData($Client, $ItemType, $Parent, $Title = $null)
 		$result = $Client.GetDefaultData($ItemType, $Parent);
 	}
 	
-	if ($Title -and $result)
+	if ($Name -and $result)
 	{
-		$result.Title = $Title;
+		$result.Title = $Name;
 	}
 	return $result;
 }

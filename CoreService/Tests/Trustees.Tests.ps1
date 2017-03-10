@@ -48,7 +48,7 @@ Describe "Core Service Trustee Tests" {
 			return @($group1, $group2);
 		}
 		Mock _Get-DefaultData { 
-			$result = [PSCustomObject]@{ Id = 'tcm:0-0-0'; Title = $Title; _ItemType = $ItemType};
+			$result = [PSCustomObject]@{ Id = 'tcm:0-0-0'; Title = $Name; _ItemType = $ItemType};
 			return $result; 
 		}
 		Mock _Get-SystemWideList {
@@ -112,7 +112,7 @@ Describe "Core Service Trustee Tests" {
 			}
 			
 			It "supports look-up by title" {
-				$user = Get-TridionUser -Title $user1.Title;
+				$user = Get-TridionUser -Name $user1.Title;
 				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
 				$user | Should Be $user1;
 			}
@@ -129,8 +129,8 @@ Describe "Core Service Trustee Tests" {
 			}
 			
 			It "supports piping in the filter" {
-				$titles = @({ $_.Title -eq $user1.Title}, {$_.Description -eq $user2.Description});
-				$users = ($titles | Get-TridionUser);
+				$Names = @({ $_.Title -eq $user1.Title}, {$_.Description -eq $user2.Description});
+				$users = ($Names | Get-TridionUser);
 				
 				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
 				Assert-MockCalled _Test-Item -Times 0 -Scope It;
@@ -172,6 +172,12 @@ Describe "Core Service Trustee Tests" {
 				Assert-MockCalled _Get-Item -Times 0 -Scope It;
 				
 				$users | Should Be $user1;
+			}
+			
+			It "has aliases for backwards-compatibility (-Title => -Name)" {
+				$user = Get-TridionUser -Title $user1.Title;
+				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
+				$user | Should Be $user1;
 			}
 		}
 	}

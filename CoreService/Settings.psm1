@@ -360,6 +360,4 @@ Function Clear-TridionCoreServiceSettings
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Get-TridionCoreServiceSettings;
-Export-ModuleMember Set-TridionCoreServiceSettings;
-Export-ModuleMember Clear-TridionCoreServiceSettings;
+Export-ModuleMember Get-Tridion*, Set-Tridion*, Clear-Tridion* -Alias *

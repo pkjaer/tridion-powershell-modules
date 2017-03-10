@@ -159,7 +159,8 @@ function Get-TridionPublication
 		# The Title of the Publication Target to load. This is slower than specifying the ID.
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
 		[ValidateNotNullOrEmpty()]
-        [string]$Title,
+		[Alias('Title')]
+        [string]$Name,
 
 		# The type of Publications to include in the list. Examples include 'Web', 'Content', and 'Mobile'. Omit to retrieve all Publications.
         [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ByPublicationType', Position=0)]
@@ -195,9 +196,9 @@ function Get-TridionPublication
 			
 			'ByTitle'
 			{
-				Write-Verbose "Loading Publication with title '$Title'..."
+				Write-Verbose "Loading Publication named '$Name'..."
 				$filter = New-Object Tridion.ContentManager.CoreService.Client.PublicationsFilterData;
-				$list = _Get-SystemWideList $client $filter | ?{$_.Title -like $Title};
+				$list = _Get-SystemWideList $client $filter | ?{$_.Title -like $Name};
 				return _Expand-PropertiesIfRequested $list $ExpandProperties;
 			}
 			
@@ -264,7 +265,8 @@ function Get-TridionPublicationTarget
 		# The Title of the Publication Target to load. This is slower than specifying the ID.
         [Parameter(Mandatory=$true, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
 		[ValidateNotNullOrEmpty()]
-        [string]$Title,
+		[Alias('Title')]
+        [string]$Name,
 		
 		[switch]$ExpandProperties
     )
@@ -291,8 +293,8 @@ function Get-TridionPublicationTarget
 			
 			'ByTitle'
 			{
-				Write-Verbose "Loading Publication Target with title '$Title'..."
-				$list = Get-TridionPublicationTarget | ?{$_.Title -like $Title} | Select -First 1;
+				Write-Verbose "Loading Publication Target named '$Name'..."
+				$list = Get-TridionPublicationTarget | ?{$_.Title -like $Name} | Select -First 1;
 				if ($ExpandProperties)
 				{
 					return $list | Get-TridionItem;
@@ -338,7 +340,8 @@ function New-TridionItem
 		# The title of the new item
         [Parameter(Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-        [string]$Title,
+		[Alias('Title')]
+        [string]$Name,
 		
 		# ID of the parent Publication / Structure Group / Folder / etc.
 		[Parameter(ValueFromPipeline=$true)]
@@ -355,7 +358,7 @@ function New-TridionItem
 		_Assert-ItemTypeValid $ItemType;
 
 		$parentId = _Get-IdFromInput $Parent;
-		$item = _Get-DefaultData $client $ItemType $parentId $Title;
+		$item = _Get-DefaultData $client $ItemType $parentId $Name;
         $result = _Save-Item $client $item;
 		return $result;
     }
@@ -398,7 +401,8 @@ function New-TridionPublication
 		# The title of the new Publication
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
 		[ValidateNotNullOrEmpty()]
-        [string]$Title,
+		[Alias('Title')]
+        [string]$Name,
 		
 		# The Publication(s) you wish to make this Publication a child of. Accepts multiple values as an array.
 		[Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
@@ -419,7 +423,7 @@ function New-TridionPublication
 	
 	End
 	{
-		$publication = _Get-DefaultData $client 1 $null $Title;
+		$publication = _Get-DefaultData $client 1 $null $Name;
 		if (!$publication) { throw "Unable to create Publication."}
 		
 		foreach($parent in $listOfParents)
