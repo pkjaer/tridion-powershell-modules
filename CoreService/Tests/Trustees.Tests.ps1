@@ -119,6 +119,13 @@ Describe "Core Service Trustee Tests" {
 				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
 				$user | Should Be $user1;
 			}
+
+			It "supports look-up by custom filter" {
+				$filter = { $_.Privileges -eq 1 };
+				$user = Get-TridionUser -Filter $filter;
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
+				$user | Should Be $user1;
+			}
 			
 			It "returns the current user" {
 				$user = Get-TridionUser -Current;
@@ -177,8 +184,18 @@ Describe "Core Service Trustee Tests" {
 				$users | Should Be $user1;
 			}
 			
-			It "supports expanding properties in list" {
+			It "supports expanding properties in list by name" {
 				$user = (Get-TridionUser -Name $user1.Title -ExpandProperties);
+
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _ExpandPropertiesIfRequested -Times 1 -Scope It -ParameterFilter { $ExpandProperties -eq $true };
+				Assert-MockCalled _GetItem -Times 1 -Scope It;
+				
+				$user | Should Be $user1;
+			}
+			
+			It "supports expanding properties in list by description" {
+				$user = (Get-TridionUser -Description $user1.Description -ExpandProperties);
 
 				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
 				Assert-MockCalled _ExpandPropertiesIfRequested -Times 1 -Scope It -ParameterFilter { $ExpandProperties -eq $true };
