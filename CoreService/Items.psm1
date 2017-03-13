@@ -166,6 +166,7 @@ function Get-TridionPublication
         [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ByPublicationType', Position=0)]
 		[string] $PublicationType,
 		
+		# Load all properties for each entry in the list. By default, only some properties are loaded (for performance reasons).
 		[Parameter(ParameterSetName = 'ByTitle')]
 		[Parameter(ParameterSetName = 'ByPublicationType')]
 		[switch]$ExpandProperties
@@ -268,6 +269,9 @@ function Get-TridionPublicationTarget
 		[Alias('Title')]
         [string]$Name,
 		
+		# Load all properties for each entry in the list. By default, only some properties are loaded (for performance reasons).
+		[Parameter(ParameterSetName = 'ById')]
+		[Parameter(ParameterSetName = 'ByTitle')]
 		[switch]$ExpandProperties
     )
 
@@ -295,11 +299,7 @@ function Get-TridionPublicationTarget
 			{
 				Write-Verbose "Loading Publication Target named '$Name'..."
 				$list = Get-TridionPublicationTarget | Where-Object {$_.Title -like $Name} | Select-Object -First 1;
-				if ($ExpandProperties)
-				{
-					return $list | Get-TridionItem;
-				}
-				return $list;
+                return _ExpandPropertiesIfRequested $list $ExpandProperties;
 			}
 		}
 	}

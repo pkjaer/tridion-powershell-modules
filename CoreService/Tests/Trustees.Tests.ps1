@@ -84,6 +84,7 @@ Describe "Core Service Trustee Tests" {
 			$Item.Id ="tcm:$publicationId-$random-$itemType";
 			return $Item;
 		}
+		Mock _ExpandPropertiesIfRequested { if ($ExpandProperties) { return $List | ForEach-Object { _GetItem $null $_.Id; } } else {return $List;} }
 		Mock _IsExistingItem { return ($Id -in $existingItems.Keys); }			
 		Mock _DeleteItem { if (!$Id -in $existingItems.Keys) { throw "Item does not exist." } }
 		Mock Close-TridionCoreServiceClient {}
@@ -172,6 +173,16 @@ Describe "Core Service Trustee Tests" {
 				Assert-MockCalled _GetItem -Times 0 -Scope It;
 				
 				$users | Should Be $user1;
+			}
+			
+			It "supports expanding properties in list" {
+				$user = (Get-TridionUser -Name $user1.Title -ExpandProperties);
+
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _ExpandPropertiesIfRequested -Times 1 -Scope It -ParameterFilter { $ExpandProperties -eq $true };
+				Assert-MockCalled _GetItem -Times 1 -Scope It;
+				
+				$user | Should Be $user1;
 			}
 			
 			It "has aliases for backwards-compatibility (-Title => -Name)" {

@@ -97,15 +97,13 @@ function _GetSystemWideList($Client, $Filter)
 
 function _IsExistingItem($Client, $Id)
 {
-    Process
-    {
-        return $Client.IsExistingObject($Id);
-    }
+	return $Client.IsExistingObject($Id);
 }
 
 function _GetItem($Client, $Id)
 {
 	$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+	$readOptions.LoadFlags = 'WebDavUrls,Expanded,IncludeAllowedActions,ExpandLinks';
 	return $Client.Read($Id, $readOptions);
 }
 
@@ -141,7 +139,7 @@ function _DeleteItem($Client, $Id)
 
 function _ExpandPropertiesIfRequested($List, $ExpandProperties)
 {
-	if ($ExpandProperties)
+	if ($ExpandProperties -and $List)
 	{
 		return $List | Get-TridionItem;
 	}

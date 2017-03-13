@@ -101,7 +101,13 @@ function Get-TridionUser
 		
 		# Only return the currently logged on user.
         [Parameter(Mandatory=$true, ParameterSetName='CurrentUser', Position=0)]
-		[switch]$Current
+		[switch]$Current,
+		
+		# Load all properties for each entry in the list. By default, only some properties are loaded (for performance reasons).
+		[Parameter(ParameterSetName = 'ByTitle')]
+		[Parameter(ParameterSetName = 'ByDescription')]
+		[Parameter(ParameterSetName = 'ByFilter')]
+		[switch]$ExpandProperties
     )
 
 	Begin
@@ -161,9 +167,10 @@ function Get-TridionUser
 		$users = $userCache;
 		if ($filterScript)
 		{
-			return $users | Where-Object $filterScript;
+			$users = $users | Where-Object $filterScript;
 		}
-		return $users;
+
+		return _ExpandPropertiesIfRequested $users $ExpandProperties;
     }
 	
 	End
