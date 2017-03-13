@@ -42,10 +42,10 @@ function Get-TridionUser
 {
     <#
     .Synopsis
-    Gets information about a specific Tridion user. Defaults to the current user.
+    Returns a list of Tridion users matching the specified criteria.
 
     .Description
-    Gets a UserData object containing information about the specified user within Tridion. 
+    Gets a list of UserData objects with information about the matching users within Tridion.
     If called without any parameters, a list of all users will be returned.
 
     .Notes
@@ -66,21 +66,41 @@ function Get-TridionUser
 
     .Example
     Get-TridionUser | Format-List
-    Returns a formatted list of properties of the currently logged on user.
+    Returns a formatted list of properties all users in the system.
 
     .Example
     Get-TridionUser | Select-Object Title, LanguageId, LocaleId, Privileges
-    Returns the title, language, locale, and privileges (system administrator) of the currently logged on user.
+    Returns the title, language, locale, and privileges (system administrator) of each user in the system.
     
     .Example
-    Get-TridionUser 'tcm:0-12-65552'
-    Returns information about user #11 within Tridion (typically the Administrator user created during installation).
+    Get-TridionUser -Id 'tcm:0-12-65552'
+    Returns information about user #12 within Tridion (typically the Administrator user created during installation).
+
+    .Example
+    Get-TridionUser -Current
+    Returns information about the currently logged in user (i.e. you).
+
+    .Example
+    Get-TridionUser -Name 'COMPANY\*'
+    Returns information about all users in the COMPANY domain (name starts with COMPANY\).
+
+    .Example
+    Get-TridionUser -Description 'Isaac *'
+    Returns information about all users with the first name 'Isaac'.
+
+    .Example
+    Get-TridionUser -Description 'Isaac *' -ExpandProperties
+    Returns all available information about all users with the first name 'Isaac'.
+
+    .Example
+    Get-TridionUser -Filter { $_.LanguageId -eq '1033' }
+    Returns information about all users who are currently using English as their UI language.
     
     #>
     [CmdletBinding(DefaultParameterSetName='ByFilter')]
     Param
     (
-		# Filtering script block
+		# Filtering script block. You can use this to filter based on any criteria.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByFilter', Position=0)]
         [ScriptBlock]$Filter,
 		
@@ -89,13 +109,13 @@ function Get-TridionUser
 		[ValidateNotNullOrEmpty()]
         [string]$Id,
 
-		# The name (including domain) of the user to load.
+		# The name (including domain) of the user to load. Wildcards are supported.
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
 		[ValidateNotNullOrEmpty()]
 		[Alias('Title')]
         [string]$Name,
 		
-		# The name (including domain) of the user to load.
+		# The 'friendly' name of the user to load. Wildcards are supported.
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByDescription', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Description,
@@ -184,10 +204,10 @@ function Get-TridionGroup
 {
     <#
     .Synopsis
-    Gets information about a specific Tridion Group.
+    Gets information about all groups within Tridion matching the specified criteria.
 
     .Description
-    Gets an object containing information about the specified Group within Tridion.
+    Gets a list of GroupData objects containing information about all Groups within Tridion matching the specified criteria.
 
     .Notes
     Example of properties available: Id, Title, Description, Scope, etc.
@@ -199,28 +219,34 @@ function Get-TridionGroup
     None.
 
     .Outputs
-    Returns an object of type [Tridion.ContentManager.CoreService.Client.GroupData].
+    Returns a list of objects of type [Tridion.ContentManager.CoreService.Client.GroupData].
 
     .Link
     Get the latest version of this script from the following URL:
     https://github.com/pkjaer/tridion-powershell-modules
 	
 	.Example
-    Get-TridionGroup "tcm:0-7-65568"
+    Get-TridionGroup
+    Returns information about all Groups in the system.
+	
+	.Example
+    Get-TridionGroup -Id 'tcm:0-7-65568'
     Returns information about the Group with the ID 'tcm:0-7-65568'.
 
     .Example
-    Get-TridionGroup -Title "Editor"
+    Get-TridionGroup -Title 'Editor'
     Returns information about the Group named 'Editor'.
     
     #>
     [CmdletBinding(DefaultParameterSetName='ByTitle')]
     Param
     (
+		# The ID of the Group to load.
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Id,
 
+		# The (partial) name of the group(s) to load. Wildcards are supported.
         [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
 		[Alias('Title')]
         [string]$Name
