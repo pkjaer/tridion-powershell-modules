@@ -24,7 +24,7 @@ $files = @(
 	'Settings.psm1', 
 	'Tridion-CoreService.psd1', 
 	'Trustees.psm1',
-	'Utilities.psm1'
+	'Utilities.ps1'
 );
 
 
