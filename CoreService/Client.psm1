@@ -78,7 +78,7 @@ Function _GetClientCredentialType($DefaultValue)
 {
 	$settings = Get-TridionCoreServiceSettings;
 
-	if ($settings.CredentialType -eq 'Default')
+	if ($settings.CredentialType -eq 'Default' -or !$settings.CredentialType)
 	{
 		return $DefaultValue;
 	}
