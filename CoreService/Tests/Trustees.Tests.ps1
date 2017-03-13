@@ -192,6 +192,16 @@ Describe "Core Service Trustee Tests" {
 				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
 				$user | Should Be $user1;
 			}
+
+			It "has aliases for backwards-compatibility (Get-TridionUsers => Get-TridionUser)" {
+				$alias = Get-Alias -Name Get-TridionUsers;
+				$alias.Definition | Should Be 'Get-TridionUser';
+				
+				# Check that it also works as expected (i.e. gets a list of items)
+				$users = Get-TridionUsers;
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
+				$users | Should Be @($user1, $user2);
+			}
 		}
 	}
 }
