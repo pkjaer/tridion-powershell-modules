@@ -238,51 +238,92 @@ function Get-TridionGroup
     Returns information about the Group named 'Editor'.
     
     #>
-    [CmdletBinding(DefaultParameterSetName='ByTitle')]
+    [CmdletBinding(DefaultParameterSetName='ByFilter')]
     Param
     (
-		# The ID of the Group to load.
+		# Filtering script block. You can use this to filter based on any criteria.
+        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByFilter', Position=0)]
+        [ScriptBlock]$Filter,
+		
+		# The TCM URI of the Group to load.
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Id,
 
-		# The (partial) name of the group(s) to load. Wildcards are supported.
-        [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
+		# The (partial) name of the Group(s) to load. Wildcards are supported.
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
+		[ValidateNotNullOrEmpty()]
 		[Alias('Title')]
-        [string]$Name
+        [string]$Name,
+		
+		# The Description of the Group to load. Wildcards are supported.
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByDescription', Position=0)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Description,
+		
+		# Load all properties for each entry in the list. By default, only some properties are loaded (for performance reasons).
+		[Parameter(ParameterSetName = 'ByTitle')]
+		[Parameter(ParameterSetName = 'ByDescription')]
+		[Parameter(ParameterSetName = 'ByFilter')]
+		[switch]$ExpandProperties
     )
 	
 	Begin
 	{
-        $client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+		$verboseRequested = ($PSBoundParameters['Verbose'] -eq $true);
+        $client = Get-TridionCoreServiceClient -Verbose:$verboseRequested;
+		$groupCache = $null;
+		$filterScript = $null;
 	}
-	
-	Process
-	{
+    
+    Process
+    {
 		switch($PsCmdlet.ParameterSetName)
 		{
 			'ById' 
 			{
-				_AssertItemType $Id 65568;
-
-				Write-Verbose "Loading Tridion Group with ID '$Id'..."
-				return _GetItem $client $Id;
+				$itemId = _GetIdFromInput $Id;
+				if (_IsNullUri($itemId)) { return $null; }
+				_AssertItemType $itemId 65568;
+				
+				if (_IsExistingItem $client $itemId)
+				{
+					return _GetItem $client $itemId;
+				}
+				return $null;
 			}
 			
 			'ByTitle'
 			{
-				Write-Verbose "Loading Tridion Groups named '$Name'..."
-				$result = _GetTridionGroups $client;
-
-				if ($Name)
-				{
-					return $result | Where-Object {$_.Title -like $Name};
-				}
-				return $result;
+				$filterScript = { $_.Title -like $Name };
+			}
+			
+			'ByDescription'
+			{
+				$filterScript = { $_.Description -like $Description };
+			}
+			
+			'ByFilter'
+			{
+				$filterScript = $Filter;
 			}
 		}
-	}
 
+		
+		if ($groupCache -eq $null)
+		{
+			$groupCache = _GetTridionGroups $client;
+		}
+		
+		$list = $groupCache;
+		if ($filterScript)
+		{
+			$list = $list | Where-Object $filterScript;
+		}
+
+		return _ExpandPropertiesIfRequested $list $ExpandProperties;
+    }
+	
 	End
 	{
 		Close-TridionCoreServiceClient $client;

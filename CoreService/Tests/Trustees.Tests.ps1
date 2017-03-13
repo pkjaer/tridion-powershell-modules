@@ -26,8 +26,8 @@ Describe "Core Service Trustee Tests" {
 		# ***********************
 		$user1 = [PSCustomObject]@{ Id = 'tcm:0-12-65552'; Title = 'DOMAIN\Administrator'; Description = 'Administrator'; Privileges = 1; };
 		$user2 = [PSCustomObject]@{ Id = 'tcm:0-13-65552'; Title = 'DOMAIN\User02'; Description = 'User 02'; Privileges = 0;};
-		$group1 = [PSCustomObject]@{ Id = 'tcm:0-2-65568'; Title = 'System Administrator'; Description = 'SDL Web Content Manager Administrators'};
-		$group2 = [PSCustomObject]@{ Id = 'tcm:0-4-65568'; Title = 'Information Designer'; Description = 'Information Designer'};
+		$group1 = [PSCustomObject]@{ Id = 'tcm:0-2-65568'; Title = 'System Administrator'; Description = 'SDL Web Content Manager Administrators'; ExtensionProperties = @{'Custom'='G1'} };
+		$group2 = [PSCustomObject]@{ Id = 'tcm:0-4-65568'; Title = 'Information Designer'; Description = 'Information Designer'; ExtensionProperties = @{'Custom'='G2'} };
 		
 		$existingItems = @{
 			$user1.Id = $user1;
@@ -220,5 +220,124 @@ Describe "Core Service Trustee Tests" {
 				$users | Should Be @($user1, $user2);
 			}
 		}
+
+		Context "Get-TridionGroup" {
+			It "validates input parameters" {
+				{ Get-TridionGroup -Id $null } | Should Throw;
+				{ Get-TridionGroup -Id '' } | Should Throw;
+				{ Get-TridionGroup -Id 'tcm:0-12-1' } | Should Throw;
+			}
+			
+			It "disposes the client after use" {
+				Get-TridionGroup -Id $group1.Id | Out-Null;
+				Assert-MockCalled Close-TridionCoreServiceClient -Times 1 -Scope It;
+			}
+			
+			It "supports look-up by ID" {
+				$group = Get-TridionGroup -Id $group1.Id;
+				Assert-MockCalled _GetItem -Times 1 -Scope It;
+				$group | Should Be $group1;
+			}
+			
+			It "supports look-up by title" {
+				$group = Get-TridionGroup -Name $group1.Title;
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				$group | Should Be $group1;
+			}
+
+			It "supports look-up by custom filter" {
+				$filter = { $_.ExtensionProperties['Custom'] -eq 'G1' };
+				$group = Get-TridionGroup -Filter $filter;
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				$group | Should Be $group1;
+			}
+			
+			It "handles items that do not exist" {
+				Get-TridionGroup -Id 'tcm:0-99-65568' | Should Be $null;
+				Get-TridionGroup -Id 'tcm:0-0-0' | Should Be $null;
+			}
+			
+			It "supports piping in the filter" {
+				$Names = @({ $_.Title -eq $group1.Title}, {$_.Description -eq $group2.Description});
+				$groups = ($Names | Get-TridionGroup);
+				
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				Assert-MockCalled _IsExistingItem -Times 0 -Scope It;
+				Assert-MockCalled _GetItem -Times 0 -Scope It;
+				
+				$groups.Count | Should Be 2;
+				$groups[0] | Should Be $group1;
+				$groups[1] | Should Be $group2;
+			}
+			
+			It "supports piping in the filter as object" {
+				$filter = { $_.ExtensionProperties['Custom'] -eq 'G1' };
+				$group = ($filter | Get-TridionGroup);
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				$group | Should Be $group1;
+			}
+			
+			It "supports piping in the ID by property name" {
+				$testInput = [PSCustomObject]@{ Id = $group1.Id };
+				$group = ($testInput | Get-TridionGroup);
+				Assert-MockCalled _GetItem -Times 1 -Scope It -ParameterFilter { $Id -eq $group1.Id };
+				$group | Should Be $group1;
+			}
+			
+			It "supports piping in the title by property name" {
+				$testInput = [PSCustomObject]@{ Title = $group1.Title };
+				$groups = ($testInput | Get-TridionGroup);
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				Assert-MockCalled _IsExistingItem -Times 0 -Scope It;
+				Assert-MockCalled _GetItem -Times 0 -Scope It;
+				$groups | Should Be $group1;
+			}
+			
+			It "supports piping in the description by property name" {
+				$testInput = [PSCustomObject]@{ Description = $group1.Description};
+				$groups = ($testInput | Get-TridionGroup -Verbose);
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				Assert-MockCalled _IsExistingItem -Times 0 -Scope It;
+				Assert-MockCalled _GetItem -Times 0 -Scope It;
+				
+				$groups | Should Be $group1;
+			}
+			
+			It "supports expanding properties in list by name" {
+				$group = (Get-TridionGroup -Name $group1.Title -ExpandProperties);
+
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				Assert-MockCalled _ExpandPropertiesIfRequested -Times 1 -Scope It -ParameterFilter { $ExpandProperties -eq $true };
+				Assert-MockCalled _GetItem -Times 1 -Scope It;
+				
+				$group | Should Be $group1;
+			}
+			
+			It "supports expanding properties in list by description" {
+				$group = (Get-TridionGroup -Description $group1.Description -ExpandProperties);
+
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				Assert-MockCalled _ExpandPropertiesIfRequested -Times 1 -Scope It -ParameterFilter { $ExpandProperties -eq $true };
+				Assert-MockCalled _GetItem -Times 1 -Scope It;
+				
+				$group | Should Be $group1;
+			}
+			
+			It "has aliases for backwards-compatibility (-Title => -Name)" {
+				$group = Get-TridionGroup -Title $group1.Title;
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				$group | Should Be $group1;
+			}
+
+			It "has aliases for backwards-compatibility (Get-TridionGroups => Get-TridionGroup)" {
+				$alias = Get-Alias -Name Get-TridionGroups;
+				$alias.Definition | Should Be 'Get-TridionGroup';
+				
+				# Check that it also works as expected (i.e. gets a list of items)
+				$groups = Get-TridionGroups;
+				Assert-MockCalled _GetTridionGroups -Times 1 -Scope It;
+				$groups | Should Be @($group1, $group2);
+			}
+		}		
 	}
 }
