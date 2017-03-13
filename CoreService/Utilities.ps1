@@ -103,7 +103,7 @@ function _IsExistingItem($Client, $Id)
 function _GetItem($Client, $Id)
 {
 	$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
-	$readOptions.LoadFlags = 'WebDavUrls,Expanded,IncludeAllowedActions,ExpandLinks';
+	$readOptions.LoadFlags = 'WebDavUrls,Expanded,IncludeAllowedActions';
 	return $Client.Read($Id, $readOptions);
 }
 
