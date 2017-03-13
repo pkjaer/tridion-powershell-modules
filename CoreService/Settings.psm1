@@ -1,4 +1,6 @@
 #Requires -version 3.0
+Set-StrictMode -Version Latest
+$script:Settings = $null;
 
 <#
 **************************************************
@@ -12,7 +14,7 @@ Function _AddSettingIfMissing($Object, $Name, $Value)
 {
 	if (!(_HasProperty -Object $Object -Name $Name))
 	{
-		_Add-Property $Object $Name $Value;
+		_AddProperty $Object $Name $Value;
 		Write-Host -ForegroundColor Green "There is a new setting available: $Name. The default value of '$Value' has been applied."
 	}
 }
@@ -74,10 +76,10 @@ Function _ConvertOldSettings($settings)
 	if ($upgradeNeeded)
 	{
 		Write-Verbose "Upgrading your settings..."
-		Add-SettingIfMissing -Object $settings -Name 'ConnectionSendTimeout' -Value '00:01:00';
-		Add-SettingIfMissing -Object $settings -Name 'Credential' -Value ([PSCredential]$null);
-		Add-SettingIfMissing -Object $settings -Name 'CredentialType' -Value 'Default';
-		Remove-SettingIfPresent -Object $settings -Name 'UserName';
+		_AddSettingIfMissing -Object $settings -Name 'ConnectionSendTimeout' -Value '00:01:00';
+		_AddSettingIfMissing -Object $settings -Name 'Credential' -Value ([PSCredential]$null);
+		_AddSettingIfMissing -Object $settings -Name 'CredentialType' -Value 'Default';
+		_RemoveSettingIfPresent -Object $settings -Name 'UserName';
 		$settings.ModuleVersion = $moduleVersion;
 		_PersistSettings $settings;
 	}
@@ -98,6 +100,7 @@ Function _RestoreSettings
 		catch
 		{
 			Write-Warning "Failed to load your existing settings. Using the default settings. "; 
+			Write-Warning "The error was: $_"
 		}
 	}
 	return _GetDefaultSettings;

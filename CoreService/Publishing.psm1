@@ -1,4 +1,5 @@
 #Requires -version 3.0
+Set-StrictMode -Version Latest
 
 <#
 **************************************************
