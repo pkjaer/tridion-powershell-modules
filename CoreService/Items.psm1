@@ -8,7 +8,7 @@
 
 . (Join-Path $PSScriptRoot 'Utilities.ps1')
 
-function _Get-PublicationTargets
+function _GetPublicationTargets
 {
     [CmdletBinding()]
 	Param()
@@ -23,7 +23,7 @@ function _Get-PublicationTargets
         if ($client -ne $null)
         {
 			$filter = New-Object Tridion.ContentManager.CoreService.Client.PublicationTargetsFilterData;
-			return _Get-SystemWideList $client $filter;
+			return _GetSystemWideList $client $filter;
         }
     }
 	
@@ -96,9 +96,9 @@ Function Get-TridionItem
     {
         if ($client -ne $null)
         {
-			if (_Test-Item $client $Id)
+			if (_IsExistingItem $client $Id)
 			{
-				return _Get-Item $client $Id;
+				return _GetItem $client $Id;
 			}
 		}
 		
@@ -184,13 +184,13 @@ function Get-TridionPublication
 		{
 			'ById' 
 			{
-				if (_Test-NullUri($Id)) { return $null; }
-				_Assert-ItemType $Id 1;
+				if (_IsNullUri($Id)) { return $null; }
+				_AssertItemType $Id 1;
 
 				Write-Verbose "Loading Publication with ID '$Id'..."
-				if (_Test-Item $client $Id)
+				if (_IsExistingItem $client $Id)
 				{
-					return _Get-Item $client $Id;
+					return _GetItem $client $Id;
 				}
 			}
 			
@@ -198,8 +198,8 @@ function Get-TridionPublication
 			{
 				Write-Verbose "Loading Publication named '$Name'..."
 				$filter = New-Object Tridion.ContentManager.CoreService.Client.PublicationsFilterData;
-				$list = _Get-SystemWideList $client $filter | ?{$_.Title -like $Name};
-				return _Expand-PropertiesIfRequested $list $ExpandProperties;
+				$list = _GetSystemWideList $client $filter | Where-Object {$_.Title -like $Name};
+				return _ExpandPropertiesIfRequested $list $ExpandProperties;
 			}
 			
 			'ByPublicationType'
@@ -210,8 +210,8 @@ function Get-TridionPublication
 				{
 					$filter.PublicationTypeName = $PublicationType;
 				}
-				$list = _Get-SystemWideList $client $filter;
-				return _Expand-PropertiesIfRequested $list $ExpandProperties;
+				$list = _GetSystemWideList $client $filter;
+				return _ExpandPropertiesIfRequested $list $ExpandProperties;
 			}
 		}
 
@@ -279,12 +279,12 @@ function Get-TridionPublicationTarget
 			{
 				if (!$Id)
 				{
-					$list = _Get-PublicationTargets;
-					return _Expand-PropertiesIfRequested $list $ExpandProperties;
+					$list = _GetPublicationTargets;
+					return _ExpandPropertiesIfRequested $list $ExpandProperties;
 				}
 				
-				if (_Test-NullUri($Id)) { return $null; }
-				_Assert-ItemType $Id 65537;
+				if (_IsNullUri($Id)) { return $null; }
+				_AssertItemType $Id 65537;
 			
 				Write-Verbose "Loading Publication Target with ID '$Id'..."
 				$result = Get-TridionItem $Id -ErrorAction SilentlyContinue;
@@ -294,7 +294,7 @@ function Get-TridionPublicationTarget
 			'ByTitle'
 			{
 				Write-Verbose "Loading Publication Target named '$Name'..."
-				$list = Get-TridionPublicationTarget | ?{$_.Title -like $Name} | Select -First 1;
+				$list = Get-TridionPublicationTarget | Where-Object {$_.Title -like $Name} | Select-Object -First 1;
 				if ($ExpandProperties)
 				{
 					return $list | Get-TridionItem;
@@ -355,11 +355,11 @@ function New-TridionItem
 	
     Process
     {
-		_Assert-ItemTypeValid $ItemType;
+		_AssertItemTypeValid $ItemType;
 
-		$parentId = _Get-IdFromInput $Parent;
-		$item = _Get-DefaultData $client $ItemType $parentId $Name;
-        $result = _Save-Item $client $item;
+		$parentId = _GetIdFromInput $Parent;
+		$item = _GetDefaultData $client $ItemType $parentId $Name;
+        $result = _SaveItem $client $item;
 		return $result;
     }
 	
@@ -418,12 +418,12 @@ function New-TridionPublication
 	
 	Process
 	{
-		$listOfParents += _Get-MultipleIdsFromInput $Parent;
+		$listOfParents += _GetMultipleIdsFromInput $Parent;
 	}
 	
 	End
 	{
-		$publication = _Get-DefaultData $client 1 $null $Name;
+		$publication = _GetDefaultData $client 1 $null $Name;
 		if (!$publication) { throw "Unable to create Publication."}
 		
 		foreach($parent in $listOfParents)
@@ -433,7 +433,7 @@ function New-TridionPublication
 			$publication.Parents += $parentLink;
 		}
 
-        $result = _Save-Item $client $publication;
+        $result = _SaveItem $client $publication;
 		
 		Close-TridionCoreServiceClient $client;
 		return $result;
@@ -484,11 +484,11 @@ function Remove-TridionItem
 	
     Process
     {
-		$itemId = _Get-IdFromInput $Id;
-		if (_Test-Item $client $itemId)
+		$itemId = _GetIdFromInput $Id;
+		if (_IsExistingItem $client $itemId)
 		{
 			Write-Verbose "Deleting item with ID '$itemId'..."
-			_Remove-Item $client $itemId;
+			_DeleteItem $client $itemId;
 		}
     }
 	
@@ -543,7 +543,7 @@ function Test-TridionItem
 	
     Process
     {
-        return _Test-Item $client (_Get-IdFromInput $Id);
+        return _IsExistingItem $client (_GetIdFromInput $Id);
     }
 	
 	End

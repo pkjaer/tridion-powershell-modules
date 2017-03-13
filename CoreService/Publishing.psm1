@@ -248,7 +248,7 @@ function Get-TridionPublishTransaction
 					if ($UserName)
 					{
 						Write-Verbose "Adding filter to only show Publish Transctions created by a user with name: $UserName";
-						$uid = Get-TridionUser -Title $UserName | Select -ExpandProperty 'Id';
+						$uid = Get-TridionUser -Title $UserName | Select-Object -ExpandProperty 'Id';
 						$f = New-Object Tridion.ContentManager.CoreService.Client.LinkToUserData;
 						$f.IdRef = $uid;
 						$filter.PublishedBy = $f;

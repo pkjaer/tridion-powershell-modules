@@ -13,7 +13,7 @@ Describe "Core Service Trustee Tests" {
 		
 		Get-Module Tridion-CoreService -All | Remove-Module;
 		$modulesToImport = @('Tridion-CoreService.psd1', 'Trustees.psm1');
-		$modulesToImport | % { Import-Module (Join-Path $parent $_) -Force; }
+		$modulesToImport | ForEach-Object { Import-Module (Join-Path $parent $_) -Force; }
 	}
 	
 	# InModuleScope allows us to mock the private, non-exported functions in the module
@@ -38,20 +38,20 @@ Describe "Core Service Trustee Tests" {
 		# ***********************
 		# Mocks
 		# ***********************
-		Mock _Get-CurrentUser {
+		Mock _GetCurrentUser {
 			return $user1;
 		}
-		Mock _Get-TridionUsers {
+		Mock _GetTridionUsers {
 			return @($user1, $user2);
 		}
-		Mock _Get-TridionGroups {
+		Mock _GetTridionGroups {
 			return @($group1, $group2);
 		}
-		Mock _Get-DefaultData { 
+		Mock _GetDefaultData { 
 			$result = [PSCustomObject]@{ Id = 'tcm:0-0-0'; Title = $Name; _ItemType = $ItemType};
 			return $result; 
 		}
-		Mock _Get-SystemWideList {
+		Mock _GetSystemWideList {
 			if ($filter.GetType().Name -eq 'UsersFilterData')
 			{
 				return @($user1, $user2);
@@ -61,7 +61,7 @@ Describe "Core Service Trustee Tests" {
 				return @($group1, $group2);
 			}			
 		}
-		Mock _Get-Item {
+		Mock _GetItem {
 			if ($Id -in $existingItems.Keys)
 			{
 				return $existingItems[$Id];
@@ -69,7 +69,7 @@ Describe "Core Service Trustee Tests" {
 			
 			throw "Item does not exist";
 		}
-		Mock _Save-Item { 
+		Mock _SaveItem { 
 			$publicationId = 0;
 			$itemType = $Item._ItemType;
 			
@@ -84,8 +84,8 @@ Describe "Core Service Trustee Tests" {
 			$Item.Id ="tcm:$publicationId-$random-$itemType";
 			return $Item;
 		}
-		Mock _Test-Item { return ($Id -in $existingItems.Keys); }			
-		Mock _Remove-Item { if (!$Id -in $existingItems.Keys) { throw "Item does not exist." } }
+		Mock _IsExistingItem { return ($Id -in $existingItems.Keys); }			
+		Mock _DeleteItem { if (!$Id -in $existingItems.Keys) { throw "Item does not exist." } }
 		Mock Close-TridionCoreServiceClient {}
 		Mock Get-TridionCoreServiceClient { return [PSCustomObject]@{}; }
 		
@@ -107,19 +107,19 @@ Describe "Core Service Trustee Tests" {
 			
 			It "supports look-up by ID" {
 				$user = Get-TridionUser -Id $user1.Id;
-				Assert-MockCalled _Get-Item -Times 1 -Scope It;
+				Assert-MockCalled _GetItem -Times 1 -Scope It;
 				$user | Should Be $user1;
 			}
 			
 			It "supports look-up by title" {
 				$user = Get-TridionUser -Name $user1.Title;
-				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
 				$user | Should Be $user1;
 			}
 			
 			It "returns the current user" {
 				$user = Get-TridionUser -Current;
-				Assert-MockCalled _Get-CurrentUser -Times 1 -Scope It;
+				Assert-MockCalled _GetCurrentUser -Times 1 -Scope It;
 				$user | Should Be $user1;
 			}
 			
@@ -132,9 +132,9 @@ Describe "Core Service Trustee Tests" {
 				$Names = @({ $_.Title -eq $user1.Title}, {$_.Description -eq $user2.Description});
 				$users = ($Names | Get-TridionUser);
 				
-				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
-				Assert-MockCalled _Test-Item -Times 0 -Scope It;
-				Assert-MockCalled _Get-Item -Times 0 -Scope It;
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _IsExistingItem -Times 0 -Scope It;
+				Assert-MockCalled _GetItem -Times 0 -Scope It;
 				
 				$users.Count | Should Be 2;
 				$users[0] | Should Be $user1;
@@ -144,39 +144,39 @@ Describe "Core Service Trustee Tests" {
 			It "supports piping in the filter as object" {
 				$filter = { $_.Privileges -eq 1 };
 				$user = ($filter | Get-TridionUser);
-				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
 				$user | Should Be $user1;
 			}
 			
 			It "supports piping in the ID by property name" {
 				$testInput = [PSCustomObject]@{ Id = $user1.Id };
 				$user = ($testInput | Get-TridionUser);
-				Assert-MockCalled _Get-Item -Times 1 -Scope It -ParameterFilter { $Id -eq $user1.Id };
+				Assert-MockCalled _GetItem -Times 1 -Scope It -ParameterFilter { $Id -eq $user1.Id };
 				$user | Should Be $user1;
 			}
 			
 			It "supports piping in the title by property name" {
 				$testInput = [PSCustomObject]@{ Title = $user1.Title };
 				$users = ($testInput | Get-TridionUser);
-				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
-				Assert-MockCalled _Test-Item -Times 0 -Scope It;
-				Assert-MockCalled _Get-Item -Times 0 -Scope It;
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _IsExistingItem -Times 0 -Scope It;
+				Assert-MockCalled _GetItem -Times 0 -Scope It;
 				$users | Should Be $user1;
 			}
 			
 			It "supports piping in the description by property name" {
 				$testInput = [PSCustomObject]@{ Description = $user1.Description};
 				$users = ($testInput | Get-TridionUser -Verbose);
-				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
-				Assert-MockCalled _Test-Item -Times 0 -Scope It;
-				Assert-MockCalled _Get-Item -Times 0 -Scope It;
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _IsExistingItem -Times 0 -Scope It;
+				Assert-MockCalled _GetItem -Times 0 -Scope It;
 				
 				$users | Should Be $user1;
 			}
 			
 			It "has aliases for backwards-compatibility (-Title => -Name)" {
 				$user = Get-TridionUser -Title $user1.Title;
-				Assert-MockCalled _Get-TridionUsers -Times 1 -Scope It;
+				Assert-MockCalled _GetTridionUsers -Times 1 -Scope It;
 				$user | Should Be $user1;
 			}
 		}

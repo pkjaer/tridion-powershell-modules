@@ -8,29 +8,29 @@
 
 . (Join-Path $PSScriptRoot 'Utilities.ps1')
 
-Function _Add-SettingIfMissing($Object, $Name, $Value)
+Function _AddSettingIfMissing($Object, $Name, $Value)
 {
-	if (!(_Has-Property -Object $Object -Name $Name))
+	if (!(_HasProperty -Object $Object -Name $Name))
 	{
 		_Add-Property $Object $Name $Value;
 		Write-Host -ForegroundColor Green "There is a new setting available: $Name. The default value of '$Value' has been applied."
 	}
 }
 
-Function _Remove-SettingIfPresent($Object, $Name)
+Function _RemoveSettingIfPresent($Object, $Name)
 {
-	if (_Has-Property -Object $Object -Name $Name)
+	if (_HasProperty -Object $Object -Name $Name)
 	{
 		$Object.PSObject.Properties.Remove($Name);
 		Write-Warning "The setting '$name' is no longer used and has been removed.";
 	}
 }
 
-Function _Get-DefaultSettings
+Function _GetDefaultSettings
 {
 	$clientDir = Join-Path $PSScriptRoot 'Clients';
-	$moduleVersion = _Get-ModuleVersion;
-	return _New-ObjectWithProperties @{
+	$moduleVersion = _GetModuleVersion;
+	return _NewObjectWithProperties @{
 		"AssemblyPath" = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.2011sp1.dll';
 		"ClassName" = "Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient";
 		"EndpointUrl" = "http://localhost/webservices/CoreService2011.svc/wsHttp";
@@ -44,24 +44,24 @@ Function _Get-DefaultSettings
 	};
 }
 
-Function _Get-Settings
+Function _GetSettings
 {
 	if ($script:Settings -eq $null)
 	{
-		$script:Settings = _Restore-Settings;
+		$script:Settings = _RestoreSettings;
 	}
 	
 	return $script:Settings;
 }
 
-Function _Get-ModuleVersion
+Function _GetModuleVersion
 {
 	return (Get-Module Tridion-CoreService).Version;
 }
 
-Function _Convert-OldSettings($settings)
+Function _ConvertOldSettings($settings)
 {
-	$moduleVersion = _Get-ModuleVersion
+	$moduleVersion = _GetModuleVersion
 	$savedVersion = $settings.ModuleVersion;
 	
 	$upgradeNeeded = (
@@ -79,12 +79,12 @@ Function _Convert-OldSettings($settings)
 		Add-SettingIfMissing -Object $settings -Name 'CredentialType' -Value 'Default';
 		Remove-SettingIfPresent -Object $settings -Name 'UserName';
 		$settings.ModuleVersion = $moduleVersion;
-		_Persist-Settings $settings;
+		_PersistSettings $settings;
 	}
 	return $settings;
 }
 
-Function _Restore-Settings
+Function _RestoreSettings
 {
 	$settingsDir = Join-Path $PSScriptRoot 'Settings'
 	$settingsFile = Join-Path $settingsDir 'CoreServiceSettings.xml';
@@ -93,17 +93,17 @@ Function _Restore-Settings
 	{
 		try
 		{
-			return _Convert-OldSettings (Import-Clixml $settingsFile);
+			return _ConvertOldSettings (Import-Clixml $settingsFile);
 		}
 		catch
 		{
 			Write-Warning "Failed to load your existing settings. Using the default settings. "; 
 		}
 	}
-	return _Get-DefaultSettings;
+	return _GetDefaultSettings;
 }
 
-Function _Persist-Settings($settings)
+Function _PersistSettings($settings)
 {
 	if ($settings -ne $null)
 	{
@@ -127,7 +127,7 @@ Function _Persist-Settings($settings)
 	}
 }
 
-Function _Get-HostWithoutPort($host)
+Function _GetHostWithoutPort($host)
 {
 	$indexOfPort = $host.LastIndexOf(":");
 	if ($indexOfPort -gt 0)
@@ -137,7 +137,7 @@ Function _Get-HostWithoutPort($host)
 	return $host;
 }
 
-Function _Validate-TimeoutSetting($value)
+Function _ValidateTimeoutSetting($value)
 {
 	$parsed = New-Object TimeSpan;
 
@@ -168,7 +168,7 @@ Function Get-TridionCoreServiceSettings
     [CmdletBinding()]
     Param()
 	
-	Process { return _Get-Settings; }
+	Process { return _GetSettings; }
 }
 
 Function Set-TridionCoreServiceSettings
@@ -231,9 +231,9 @@ Function Set-TridionCoreServiceSettings
 		$versionSpecified = ($parametersSpecified -contains 'Version');
 		$credentialTypeSpecified = ($parametersSpecified -contains 'CredentialType');
 		
-		$result = _Get-Settings;
+		$result = _GetSettings;
 		if ($connectionTypeSpecified) { $result.ConnectionType = $ConnectionType; }
-		if ($connectionSendTimeoutSpecified) { $result.ConnectionSendTimeout = _Validate-TimeoutSetting $ConnectionSendTimeout; }
+		if ($connectionSendTimeoutSpecified) { $result.ConnectionSendTimeout = _ValidateTimeoutSetting $ConnectionSendTimeout; }
 		if ($credentialSpecified) { $result.Credential = $Credential; }
 		if ($hostNameSpecified) { $result.HostName = $HostName; }
 		if ($versionSpecified) { $result.Version = $Version; }
@@ -262,7 +262,7 @@ Function Set-TridionCoreServiceSettings
 
 			if ($port)
 			{
-				$host = (_Get-HostWithoutPort $host);
+				$host = (_GetHostWithoutPort $host);
 			}
 			
 			switch($result.Version)
@@ -312,7 +312,7 @@ Function Set-TridionCoreServiceSettings
 		
 		if ($Persist)
 		{
-			_Persist-Settings $result;
+			_PersistSettings $result;
 		}
 		
 		$script:Settings = $result;
@@ -342,10 +342,10 @@ Function Clear-TridionCoreServiceSettings
 	)
 	
 	Process {
-        $result = _Get-DefaultSettings
+        $result = _GetDefaultSettings
 		if ($Persist -and $PSCmdlet.ShouldProcess('CoreServiceSettings.xml'))
 		{
-			_Persist-Settings $result
+			_PersistSettings $result
 		}
 		$script:Settings = $result;
 		if ($PassThru) 

@@ -8,12 +8,12 @@
 
 . (Join-Path $PSScriptRoot 'Utilities.ps1')
 
-Function _Get-CurrentUser($Client)
+Function _GetCurrentUser($Client)
 {
 	return $Client.GetCurrentUser();
 }
 
-Function _Get-TridionUsers($Client, $IncludePredefinedUsers)
+Function _GetTridionUsers($Client, $IncludePredefinedUsers)
 {
 	$filter = New-Object Tridion.ContentManager.CoreService.Client.UsersFilterData;
 	if (-not $IncludePredefinedUsers)
@@ -23,7 +23,7 @@ Function _Get-TridionUsers($Client, $IncludePredefinedUsers)
 	return $Client.GetSystemWideList($filter);
 }
 
-Function _Get-TridionGroups($Client)
+Function _GetTridionGroups($Client)
 {
 	$filter = New-Object Tridion.ContentManager.CoreService.Client.GroupsFilterData;
 	return $Client.GetSystemWideList($filter);
@@ -119,19 +119,19 @@ function Get-TridionUser
 			'CurrentUser'
 			{
 				Write-Verbose "Loading current user...";
-				return _Get-CurrentUser $client;
+				return _GetCurrentUser $client;
 			}
 			
 			'ById' 
 			{
-				$itemId = _Get-IdFromInput $Id;
-				if (_Test-NullUri($itemId)) { return $null; }
-				_Assert-ItemType $itemId 65552;
+				$itemId = _GetIdFromInput $Id;
+				if (_IsNullUri($itemId)) { return $null; }
+				_AssertItemType $itemId 65552;
 				
 				Write-Verbose "Loading user with ID '$itemId'...";
-				if (_Test-Item $client $itemId)
+				if (_IsExistingItem $client $itemId)
 				{
-					return _Get-Item $client $itemId;
+					return _GetItem $client $itemId;
 				}
 				return $null;
 			}
@@ -155,7 +155,7 @@ function Get-TridionUser
 		
 		if ($userCache -eq $null)
 		{
-			$userCache = _Get-TridionUsers $client $false;
+			$userCache = _GetTridionUsers $client $false;
 		}
 		
 		$users = $userCache;
@@ -229,20 +229,20 @@ function Get-TridionGroup
 		{
 			'ById' 
 			{
-				_Assert-ItemType $Id 65568;
+				_AssertItemType $Id 65568;
 
 				Write-Verbose "Loading Tridion Group with ID '$Id'..."
-				return _Get-Item $client $Id;
+				return _GetItem $client $Id;
 			}
 			
 			'ByTitle'
 			{
 				Write-Verbose "Loading Tridion Groups named '$Name'..."
-				$result = _Get-TridionGroups $client;
+				$result = _GetTridionGroups $client;
 
 				if ($Name)
 				{
-					return $result | ?{$_.Title -like $Name};
+					return $result | Where-Object {$_.Title -like $Name};
 				}
 				return $result;
 			}
@@ -521,7 +521,7 @@ function New-TridionUser
 								$groupsLoaded = $true;
 							}
 							
-							$group = $tridionGroups | ?{$_.Title -eq $groupUri} | Select -First 1
+							$group = $tridionGroups | Where-Object {$_.Title -eq $groupUri} | Select-Object -First 1
 							if (-not $group) 
 							{
 								Write-Error "Could not find a group named $groupUri."

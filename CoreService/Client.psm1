@@ -6,7 +6,7 @@
 **************************************************
 #>
 
-Function _Get-CoreServiceBinding
+Function _GetCoreServiceBinding
 {
 	$settings = Get-TridionCoreServiceSettings
 
@@ -21,13 +21,13 @@ Function _Get-CoreServiceBinding
 		{ 
 			$binding = New-Object System.ServiceModel.WSHttpBinding;
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Message;
-			$binding.Security.Transport.ClientCredentialType = (_Get-ClientCredentialType -DefaultValue "Basic");
+			$binding.Security.Transport.ClientCredentialType = (_GetClientCredentialType -DefaultValue "Basic");
 		}
 		"LDAP-SSL"
 		{
 			$binding = New-Object System.ServiceModel.WSHttpBinding;
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Transport;
-			$binding.Security.Transport.ClientCredentialType = (_Get-ClientCredentialType -DefaultValue "Basic")
+			$binding.Security.Transport.ClientCredentialType = (_GetClientCredentialType -DefaultValue "Basic")
 		}
 		"netTcp" 
 		{ 
@@ -41,25 +41,25 @@ Function _Get-CoreServiceBinding
 		{
 			$binding = New-Object System.ServiceModel.WSHttpBinding;
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Transport;
-			$binding.Security.Transport.ClientCredentialType = (_Get-ClientCredentialType -DefaultValue "Windows")
+			$binding.Security.Transport.ClientCredentialType = (_GetClientCredentialType -DefaultValue "Windows")
 		}
 		"Basic"
 		{
 			$binding = New-Object System.ServiceModel.BasicHttpBinding;
 			$binding.Security.Mode = [System.ServiceModel.BasicHttpSecurityMode]::TransportCredentialOnly;
-			$binding.Security.Transport.ClientCredentialType = (_Get-ClientCredentialType -DefaultValue "Windows")
+			$binding.Security.Transport.ClientCredentialType = (_GetClientCredentialType -DefaultValue "Windows")
 		}
 		"Basic-SSL"
 		{
 			$binding = New-Object System.ServiceModel.BasicHttpsBinding;
 			$binding.Security.Mode = [System.ServiceModel.BasicHttpsSecurityMode]::Transport;
-			$binding.Security.Transport.ClientCredentialType = (_Get-ClientCredentialType -DefaultValue "Windows")
+			$binding.Security.Transport.ClientCredentialType = (_GetClientCredentialType -DefaultValue "Windows")
 		}
 		default 
 		{ 
 			$binding = New-Object System.ServiceModel.WSHttpBinding; 
 			$binding.Security.Mode = [System.ServiceModel.SecurityMode]::Message;
-			$binding.Security.Transport.ClientCredentialType = (_Get-ClientCredentialType -DefaultValue "Windows")
+			$binding.Security.Transport.ClientCredentialType = (_GetClientCredentialType -DefaultValue "Windows")
 		}
 	}
 	
@@ -69,12 +69,12 @@ Function _Get-CoreServiceBinding
 	return $binding;
 }
 
-Function _New-AssemblyInstance($instanceTypeName, $binding, $endpoint)
+Function _NewAssemblyInstance($instanceTypeName, $binding, $endpoint)
 {
 	return [Activator]::CreateInstance($instanceTypeName, $binding, $endpoint);
 }
 
-Function _Get-ClientCredentialType($DefaultValue)
+Function _GetClientCredentialType($DefaultValue)
 {
 	$settings = Get-TridionCoreServiceSettings;
 
@@ -86,13 +86,13 @@ Function _Get-ClientCredentialType($DefaultValue)
 	return $settings.CredentialType;
 }
 
-Function _Set-Credential($client, $credential)
+Function _SetCredential($client, $credential)
 {
 	$userName = $credential.UserName;
 	$client.ClientCredentials.Windows.ClientCredential = [System.Net.NetworkCredential]$credential;
 }
 
-Function _Set-ImpersonateUser($client, $userName)
+Function _SetImpersonateUser($client, $userName)
 {
 	$client.Impersonate($userName) | Out-Null;
 }
@@ -160,7 +160,7 @@ Function Get-TridionCoreServiceClient
         
         # Load the Core Service Client
         $endpoint = New-Object System.ServiceModel.EndpointAddress -ArgumentList $serviceInfo.EndpointUrl
-        $binding = _Get-CoreServiceBinding;
+        $binding = _GetCoreServiceBinding;
 
         #Load the assembly without locking the file
 		$assemblyBytes = [IO.File]::ReadAllBytes($serviceInfo.AssemblyPath);
@@ -173,10 +173,10 @@ Function Get-TridionCoreServiceClient
     {
         try
         {
-			$proxy = _New-AssemblyInstance $instanceType.FullName $binding $endpoint;
+			$proxy = _NewAssemblyInstance $instanceType.FullName $binding $endpoint;
 			if ($serviceInfo.Credential)
 			{
-				_Set-Credential $proxy $serviceInfo.Credential;
+				_SetCredential $proxy $serviceInfo.Credential;
 
 				if ($binding.Security.Transport.ClientCredentialType -eq "Basic")
 				{
@@ -195,7 +195,7 @@ Function Get-TridionCoreServiceClient
 
 			if ($ImpersonateUserName)
 			{
-				_Set-ImpersonateUser $proxy $ImpersonateUserName;
+				_SetImpersonateUser $proxy $ImpersonateUserName;
 			}
 			
             return $proxy;
