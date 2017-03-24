@@ -49,9 +49,20 @@ Describe "Core Service Trustee Tests" {
 		Mock _GetTridionGroups {
 			return @($group1, $group2);
 		}
-		Mock _GetDefaultData { 
-			$result = [PSCustomObject]@{ Id = 'tcm:0-0-0'; Title = $Name; _ItemType = $ItemType};
-			return $result; 
+		Mock _GetDefaultData {
+			$properties = @{
+				Id = 'tcm:0-0-0';
+				Title = $Name;
+				Description = '';
+				_ItemType = $ItemType;
+			};
+
+			switch($ItemType)
+			{
+				65568 { $properties += @{ Scope = @(); GroupMemberships = @(); }; }
+			}
+
+			return _NewObjectWithProperties $properties;
 		}
 		Mock _GetSystemWideList {
 			if ($filter.GetType().Name -eq 'UsersFilterData')
@@ -71,19 +82,22 @@ Describe "Core Service Trustee Tests" {
 			
 			throw "Item does not exist";
 		}
-		Mock _SaveItem { 
-			$publicationId = 0;
-			$itemType = $Item._ItemType;
-			
-			switch($itemType)
+		Mock _SaveItem {
+			if ($IsNew)
 			{
-				65552 {}
-				65568 {}
-				default { throw "Unexpected item type: $itemType"; }
+				$publicationId = 0;
+				$itemType = $Item._ItemType;
+				
+				switch($itemType)
+				{
+					65552 {}
+					65568 {}
+					default { throw "Unexpected item type: $itemType"; }
+				}
+
+				$random = Get-Random -Minimum 10 -Maximum 500;
+				$Item.Id ="tcm:$publicationId-$random-$itemType";
 			}
-			
-			$random = Get-Random -Minimum 10 -Maximum 500;
-			$Item.Id ="tcm:$publicationId-$random-$itemType";
 			return $Item;
 		}
 		Mock _ExpandPropertiesIfRequested { if ($ExpandProperties) { return $List | ForEach-Object { _GetItem $null $_.Id; } } else {return $List;} }
@@ -339,5 +353,34 @@ Describe "Core Service Trustee Tests" {
 				$groups | Should Be @($group1, $group2);
 			}
 		}		
+
+		Context "New-TridionGroup" {
+			It "validates input parameters" {
+				{ New-TridionGroup -Name $null } | Should Throw;
+				{ New-TridionGroup -Name '' } | Should Throw;
+			}
+			
+			It "disposes the client after use" {
+				New-TridionGroup -Name 'Testing dispose' | Out-Null;
+				Assert-MockCalled Close-TridionCoreServiceClient -Times 1 -Scope It;
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+			}
+			
+			It "returns the result" {
+				$name = 'Testing';
+				$desc = 'Purely for testing purposes'
+				$scope = @('tcm:0-1-1', 'tcm:0-2-1');
+				$group = New-TridionGroup -Name $name -Description $desc -Scope $scope;
+				
+				$group.Id | Should Not BeNullOrEmpty;
+				$group.Id | Should Not Be 'tcm:0-0-0';
+				$group.Title | Should Be $name;
+				$group.Description | Should Be $desc;
+				$group.Scope.Count | Should Be 2;
+				$group.Scope[0].IdRef | Should Be $scope[0];
+				$group.Scope[1].IdRef | Should Be $scope[1];
+				$group.GroupMemberships.Count | Should Be 0;
+			}
+		}
 	}
 }

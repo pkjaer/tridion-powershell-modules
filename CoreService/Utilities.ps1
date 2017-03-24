@@ -16,12 +16,7 @@ Function _HasProperty($Object, $Name)
 
 Function _NewObjectWithProperties([Hashtable]$properties)
 {
-	$result = New-Object -TypeName System.Object;
-	foreach($key in $properties.Keys)
-	{
-		_AddProperty -Object $result -Name $key -Value $properties[$key];
-	}
-	return $result;
+	return New-Object -TypeName PSObject -Property $properties;
 }
 
 function _IsNullUri($Id) 
@@ -36,6 +31,11 @@ function _GetIdFromInput($Value)
 
 function _GetPropertyFromInput($Value, $PropertyName)
 {
+	if ($Value -is [ScriptBlock])
+	{ 
+		return $Value.invoke();
+	}
+	
 	if ($Value -is [object])
 	{
 		if (Get-Member -InputObject $Value -Name $PropertyName)
@@ -126,9 +126,13 @@ function _GetDefaultData($Client, $ItemType, $Parent, $Name = $null)
 	return $result;
 }
 
-function _SaveItem($Client, $Item)
+function _SaveItem($Client, $Item, $IsNew = $false)
 {
 	$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+	if ($IsNew)
+	{
+		return $Client.Create($Item, $readOptions);	
+	}
 	return $Client.Save($Item, $readOptions);
 }
 
