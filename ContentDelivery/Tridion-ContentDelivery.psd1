@@ -27,7 +27,7 @@ CompanyName = 'SDL'
 Copyright = ''
 
 # Description of the functionality provided by this module
-Description = 'Provides cmdlets to test and manage the various capabilities of SDL Web 8 Content Delivery services.'
+Description = 'Provides functions to test and manage the various capabilities of SDL Web 8 Content Delivery services.'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '3.0'
