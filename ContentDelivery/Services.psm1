@@ -48,6 +48,13 @@ function _TestCapability
 
 	$entry.Status = 'Registered';
 	$entry.URL = $details.entry.content.properties.URI;
+
+	# Handle 'localhost' registrations on remote machines
+	if ($entry.URL -match 'localhost')
+	{
+		$host = ([System.Uri]$discoveryServiceUrl).Host;
+		$entry.URL = $entry.URL.Replace('localhost', $host);
+	}
 	
 	# Auto-registered services will have an entry but no URL, when they are stopped
 	if (!$entry.URL) 
@@ -139,8 +146,7 @@ function Reset-TridionContentDeliverySettings
 
 	$result = Set-TridionContentDeliverySettings `
 		-DiscoveryServiceUrl 'http://localhost:8082/discovery.svc' `
-		-ClientId 'implementer' -ClientSecret (ConvertTo-SecureString "Impl3m3nt0rP@ssw0rd" -AsPlainText -Force) `
-		-PassThru;
+		-ClientId $null -ClientSecret $null -PassThru;
 	
 	if ($PassThru) { return $result; }
 }
