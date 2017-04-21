@@ -137,7 +137,7 @@ function Reset-TridionContentDeliverySettings
     .Description
     Resets the settings that are used to contact the Content Delivery services to the default values: localhost for the Discovery Service URL 
 	and 'implementer' as the Client ID with its default value for Client Secret.
-    #>
+	#>
 	[CmdletBinding()]
 	Param(
 		[Parameter()]
@@ -159,6 +159,10 @@ function Set-TridionContentDeliverySettings
 
     .Description
     Sets the settings to use when contacting the Content Delivery services, such as the URL to the Discovery service and the OAuth tokens to use.
+
+	.Example
+	$secret = Read-Host -Prompt "Enter client secret" -AsSecureString
+	Set-TridionContentDeliverySettings -DiscoveryServiceUrl http://localhost:8082/discovery.svc -ClientId implementer -ClientSecret $secret;
     #>    
 	[CmdletBinding()]
     Param(
