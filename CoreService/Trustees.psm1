@@ -396,22 +396,22 @@ function New-TridionGroup
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Medium')]
     Param(
 			# The name of the new Group. This is displayed to end-users.
-            [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+            [Parameter(Mandatory=$true, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
 			[ValidateNotNullOrEmpty()]
 			[Alias('Title')]
-            $Name,
+            [string]$Name,
             
 			# The description of the new Group. Generally used to indicate the purpose of the group. 
-            [Parameter()]
-            $Description,
+            [Parameter(ValueFromPipelineByPropertyName=$true)]
+            [string]$Description,
 			
 			# A list of URIs for the Publications in which the new Group applies.
-			[Parameter()]
-			$Scope,
+			[Parameter(ValueFromPipelineByPropertyName=$true)]
+			[string[]]$Scope,
 			
 			# A list of URIs for the existing Groups that the new Group should be a part of.
-			[Parameter()]
-			$MemberOf
+			[Parameter(ValueFromPipelineByPropertyName=$true)]
+			[string[]]$MemberOf
     )
 	
 	Begin
@@ -473,10 +473,10 @@ function New-TridionUser
     (Tridion.ContentManager.Data.CommunicationManagement.PublicationData object)
 
     .Inputs
-    [string] userName: the user name including the domain.
-    [string] description: the friendly name of the user, typically the full name. Defaults to the $UserName parameter.
+    [string] Name: the user name including the domain.
+    [string] Description: the friendly name of the user, typically the full name. Defaults to the $Name parameter.
 	[string] MemberOf: the groups you want the user to be in.
-    [bool] isAdmin: set to true if you wish to give the new user full administrator rights within the Content Manager. Defaults to $false.
+    [switch] MakeAdministrator: include this switch if you wish to give the new user full administrator rights within the Content Manager.
 
     .Outputs
     Returns an object of type [Tridion.ContentManager.CoreService.Client.UserData], representing the newly created user.
@@ -486,27 +486,27 @@ function New-TridionUser
     https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
-    New-TridionUser -UserName "GLOBAL\user01"
+    New-TridionUser -Name "GLOBAL\user01"
     Adds "GLOBAL\user01" to the Content Manager with a description matching the user name and no administrator rights.
 	
 	.Example
-    New-TridionUser -UserName "GLOBAL\user01" -MemberOf SuperUsers,WebMasters
+    New-TridionUser -Name "GLOBAL\user01" -MemberOf SuperUsers,WebMasters
     Adds "GLOBAL\user01" to the Content Manager with a description matching the user name, to groups SuperUsers and WebMasters, and with no administrator rights.
 	
 	.Example
-    New-TridionUser -UserName "GLOBAL\user01" -MemberOf "tcm:0-188-65552"
+    New-TridionUser -Name "GLOBAL\user01" -MemberOf "tcm:0-188-65552"
     Adds "GLOBAL\user01" to the Content Manager with a description matching the user name, to group with id tcm:0-188-65552, and with no administrator rights.
     
     .Example
-    New-TridionUser -UserName "GLOBAL\user01" -Description "User 01"
+    New-TridionUser -Name "GLOBAL\user01" -Description "User 01"
     Adds "GLOBAL\user01" to the Content Manager with a description of "User 01" and no administrator rights.
     
     .Example
-    New-TridionUser -Username GLOBAL\User01 -MakeAdministrator
+    New-TridionUser -Name GLOBAL\User01 -MakeAdministrator
     Adds "GLOBAL\user01" to the Content Manager with a description matching the user name and system administrator rights.
 
     .Example
-    New-TridionUser -UserName "GLOBAL\user01" -Description "User 01" -MakeAdministrator | Format-List
+    New-TridionUser -Name "GLOBAL\user01" -Description "User 01" -MakeAdministrator | Format-List
     Adds "GLOBAL\user01" to the Content Manager with a description of "User 01" and system administrator rights.
     Displays all of the properties of the resulting user as a list.
     
@@ -514,20 +514,21 @@ function New-TridionUser
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Medium')]
     Param(
 			# The username (including domain) of the new User
-            [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+            [Parameter(Mandatory=$true, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
 			[ValidateNotNullOrEmpty()]
-            [string]$UserName,
+			[Alias('UserName')]
+            [string]$Name,
 			
             # The description (or 'friendly name') of the user. This is displayed throughout the UI.
-            [Parameter()]
+            [Parameter(ValueFromPipelineByPropertyName=$true)]
             [string]$Description,
 			
 			# A list of URIs for the existing Groups that the new User should be a part of. Supports also Titles of the groups.
-            [Parameter()]
+            [Parameter(ValueFromPipelineByPropertyName=$true)]
             [string[]]$MemberOf,
 			
             # If set, the new user will have system administrator privileges. Use with caution.
-            [Parameter()]
+            [Parameter(ValueFromPipelineByPropertyName=$true)]
             [switch]$MakeAdministrator
     )
 	
@@ -542,9 +543,9 @@ function New-TridionUser
         if ($client -ne $null)
         {
 			$userDescription = _GetPropertyFromInput $Description 'Description';
-			if (!$userDescription) { $userDescription = $UserName; }
+			if (!$userDescription) { $userDescription = $Name; }
 
-			$user = _GetDefaultData $client 65552 $null $UserName;
+			$user = _GetDefaultData $client 65552 $null $Name;
 			$user.Description = $userDescription;
 			
 			if ($MemberOf)

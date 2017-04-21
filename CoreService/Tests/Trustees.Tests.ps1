@@ -59,6 +59,7 @@ Describe "Core Service Trustee Tests" {
 
 			switch($ItemType)
 			{
+				65552 { $properties += @{ Privileges = 0; GroupMemberships = @(); }; }
 				65568 { $properties += @{ Scope = @(); GroupMemberships = @(); }; }
 			}
 
@@ -368,18 +369,256 @@ Describe "Core Service Trustee Tests" {
 			
 			It "returns the result" {
 				$name = 'Testing';
-				$desc = 'Purely for testing purposes'
+				$description = 'Purely for testing purposes'
 				$scope = @('tcm:0-1-1', 'tcm:0-2-1');
-				$group = New-TridionGroup -Name $name -Description $desc -Scope $scope;
+				$group = New-TridionGroup -Name $name -Description $description -Scope $scope;
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
 				
 				$group.Id | Should Not BeNullOrEmpty;
 				$group.Id | Should Not Be 'tcm:0-0-0';
 				$group.Title | Should Be $name;
-				$group.Description | Should Be $desc;
+				$group.Description | Should Be $description;
 				$group.Scope.Count | Should Be 2;
 				$group.Scope[0].IdRef | Should Be $scope[0];
 				$group.Scope[1].IdRef | Should Be $scope[1];
 				$group.GroupMemberships.Count | Should Be 0;
+			}
+
+			It "supports piping in the name and description by property name" {
+				$description = "Test Description";
+				$testInput = [PSCustomObject]@{ Name = $group1.Title; Description = $description };
+				$group = ($testInput | New-TridionGroup);
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$group.Id | Should Not BeNullOrEmpty;
+				$group.Id | Should Not Be 'tcm:0-0-0';
+				$group.Title | Should Be $testInput.Name;
+				$group.Description | Should Be $testInput.Description;
+				$group.Scope.Count | Should Be 0;
+				$group.GroupMemberships.Count | Should Be 0;
+			}
+
+			It "supports piping in the scope by property name" {
+				$name = 'Testing scope';
+				$scope = @('tcm:0-1-1', 'tcm:0-2-1');
+				$testInput = [PSCustomObject]@{ Scope = $scope };
+				$group = ($testInput | New-TridionGroup -Name $name);
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$group.Id | Should Not BeNullOrEmpty;
+				$group.Id | Should Not Be 'tcm:0-0-0';
+				$group.Title | Should Be $name;
+				$group.Description | Should Be $name;
+				$group.Scope.Count | Should Be 2;
+				$group.Scope[0].IdRef | Should Be $scope[0];
+				$group.Scope[1].IdRef | Should Be $scope[1];
+				$group.GroupMemberships.Count | Should Be 0;
+			}
+
+			It "supports single value scope" {
+				$name = 'Testing single value scope';
+				$group = New-TridionGroup -Name $name -Scope 'tcm:0-1-1';
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$group.Id | Should Not BeNullOrEmpty;
+				$group.Id | Should Not Be 'tcm:0-0-0';
+				$group.Title | Should Be $name;
+				$group.Description | Should Be $name;
+				$group.Scope.Count | Should Be 1;
+				$group.Scope[0].IdRef | Should Be 'tcm:0-1-1';
+				$group.GroupMemberships.Count | Should Be 0;
+			}
+
+			It "supports piping in the group membership by property name" {
+				$name = 'Testing group membership';
+				$memberOf = @($group1.Id, $group2.Id);
+				$testInput = [PSCustomObject]@{ MemberOf = $memberOf };
+				$group = ($testInput | New-TridionGroup -Name $name);
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$group.Id | Should Not BeNullOrEmpty;
+				$group.Id | Should Not Be 'tcm:0-0-0';
+				$group.Title | Should Be $name;
+				$group.Description | Should Be $name;
+				$group.Scope.Count | Should Be 0;
+				$group.GroupMemberships.Count | Should Be 2;
+				$group.GroupMemberships[0].Group.IdRef | Should Be $memberOf[0];
+				$group.GroupMemberships[1].Group.IdRef | Should Be $memberOf[1];
+			}
+
+			It "supports single group membership" {
+				$name = 'Testing single value group membership';
+				$group = New-TridionGroup -Name $name -MemberOf $group1.Id;
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$group.Id | Should Not BeNullOrEmpty;
+				$group.Id | Should Not Be 'tcm:0-0-0';
+				$group.Title | Should Be $name;
+				$group.Description | Should Be $name;
+				$group.Scope.Count | Should Be 0;
+				$group.GroupMemberships.Count | Should Be 1;
+				$group.GroupMemberships[0].Group.IdRef | Should Be $group1.Id;
+			}
+			
+			It "defaults to the name as the description" {
+				$name = 'Both Name and Description';
+				$group = New-TridionGroup -Name $name;
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$group.Id | Should Not BeNullOrEmpty;
+				$group.Id | Should Not Be 'tcm:0-0-0';
+				$group.Title | Should Be $name;
+				$group.Description | Should Be $name;
+				$group.Scope.Count | Should Be 0;
+				$group.GroupMemberships.Count | Should Be 0;
+			}
+			
+			It "has aliases for backwards-compatibility (-Title => -Name)" {
+				$group = New-TridionGroup -Title $group1.Title;
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$group.Title | Should Be $group1.Title;
+			}
+		}
+
+		Context "New-TridionUser" {
+			It "validates input parameters" {
+				{ New-TridionUser -Name $null } | Should Throw;
+				{ New-TridionUser -Name '' } | Should Throw;
+			}
+			
+			It "disposes the client after use" {
+				New-TridionUser -Name 'Testing dispose' | Out-Null;
+				Assert-MockCalled Close-TridionCoreServiceClient -Times 1 -Scope It;
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+			}
+			
+			It "returns the result" {
+				$name = 'DOMAIN\username';
+				$description = 'Test User'
+				$user = New-TridionUser -Name $name -Description $description;
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+				
+				$user.Id | Should Not BeNullOrEmpty;
+				$user.Id | Should Not Be 'tcm:0-0-0';
+				$user.Title | Should Be $name;
+				$user.Description | Should Be $description;
+				$user.GroupMemberships.Count | Should Be 0;
+				$user.Privileges | Should Be 0;
+			}
+
+			It "supports making the user an administrator" {
+				$name = 'DOMAIN\username';
+				$description = 'Test User'
+				$user = New-TridionUser -Name $name -Description $description -MakeAdministrator;
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+				
+				$user.Id | Should Not BeNullOrEmpty;
+				$user.Id | Should Not Be 'tcm:0-0-0';
+				$user.Title | Should Be $name;
+				$user.Description | Should Be $description;
+				$user.GroupMemberships.Count | Should Be 0;
+				$user.Privileges | Should Be 1;
+			}
+
+			It "supports piping in the name and description by property name" {
+				$name = 'DOMAIN\username';
+				$description = "Test User";
+				$testInput = [PSCustomObject]@{ Name = $name; Description = $description };
+				$user = ($testInput | New-TridionUser);
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$user.Id | Should Not BeNullOrEmpty;
+				$user.Id | Should Not Be 'tcm:0-0-0';
+				$user.Title | Should Be $testInput.Name;
+				$user.Description | Should Be $testInput.Description;
+				$user.GroupMemberships.Count | Should Be 0;
+				$user.Privileges | Should Be 0;
+			}
+
+			It "supports piping in the group membership by property name" {
+				$name = 'Testing group membership';
+				$memberOf = @($group1.Id, $group2.Id);
+				$testInput = [PSCustomObject]@{ MemberOf = $memberOf };
+				$user = ($testInput | New-TridionUser -Name $name);
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$user.Id | Should Not BeNullOrEmpty;
+				$user.Id | Should Not Be 'tcm:0-0-0';
+				$user.Title | Should Be $name;
+				$user.Description | Should Be $name;
+				$user.GroupMemberships.Count | Should Be 2;
+				$user.GroupMemberships[0].Group.IdRef | Should Be $memberOf[0];
+				$user.GroupMemberships[1].Group.IdRef | Should Be $memberOf[1];
+				$user.Privileges | Should Be 0;
+			}
+
+			It "supports single group membership" {
+				$name = 'Testing single value group membership';
+				$user = New-TridionUser -Name $name -MemberOf $group1.Id;
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$user.Id | Should Not BeNullOrEmpty;
+				$user.Id | Should Not Be 'tcm:0-0-0';
+				$user.Title | Should Be $name;
+				$user.Description | Should Be $name;
+				$user.GroupMemberships.Count | Should Be 1;
+				$user.GroupMemberships[0].Group.IdRef | Should Be $group1.Id;
+				$user.Privileges | Should Be 0;
+			}
+			
+			It "supports look-up by titles in group memberships" {
+				$name = 'Testing group membership by title';
+				$memberOf = @($group1.Title, $group2.Title);
+				$testInput = [PSCustomObject]@{ MemberOf = $memberOf };
+				$user = ($testInput | New-TridionUser -Name $name);
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$user.Id | Should Not BeNullOrEmpty;
+				$user.Id | Should Not Be 'tcm:0-0-0';
+				$user.Title | Should Be $name;
+				$user.Description | Should Be $name;
+				$user.GroupMemberships.Count | Should Be 2;
+				$user.GroupMemberships[0].Group.IdRef | Should Be $group1.Id;
+				$user.GroupMemberships[1].Group.IdRef | Should Be $group2.Id;
+				$user.Privileges | Should Be 0;
+			}
+
+			It "defaults to the name as the description" {
+				$name = 'DOMAIN\username';
+				$user = New-TridionUser -Name $name;
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+
+				$user.Id | Should Not BeNullOrEmpty;
+				$user.Id | Should Not Be 'tcm:0-0-0';
+				$user.Title | Should Be $name;
+				$user.Description | Should Be $name;
+				$user.GroupMemberships.Count | Should Be 0;
+				$user.Privileges | Should Be 0;
+			}
+			
+			It "has aliases for backwards-compatibility (-UserName => -Name)" {
+				$name = 'DOMAIN\username';
+				$user = New-TridionUser -UserName $name;
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+				
+				$user.Title | Should Be $name;
 			}
 		}
 	}
