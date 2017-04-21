@@ -26,12 +26,13 @@ v2.4.0.0
  - Get-TridionGroups has been renamed to Get-TridionGroup.
  - Added support for basic HTTP connections to the Core Service (ConnectionType setting) and the ability to override the CredentialType (which also supports Basic now)
  - Introduced Pester scripts to test the functionality and ensure backwards-compatibility. These are not installed but are run when code is checked into GitHub.
+ - Added a function to Unpublish items (Unpublish-TridionItem)
 	
 Special thanks to Jacques Kors for his contributions to this version.
 	
 v2.3.0.0
 
-- Added functions to Publish and Unpublish items (Publish-TridionItem, Unpublish-TridionItem)
+- Added a function to Publish items (Publish-TridionItem)
 - You may now run the module as a different user by specifying the Credential setting (e.g. "Set-TridionCoreServiceSettings -Credential (Get-Credential)")
    NOTE: The username and password are encrypted and are safe to store using the -Persist parameter.
 - Added a function to reset your settings to the default values (Clear-TridionCoreServiceSettings)
