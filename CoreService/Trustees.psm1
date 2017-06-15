@@ -30,6 +30,19 @@ Function _GetTridionGroups($Client)
 	return $Client.GetSystemWideList($filter);
 }
 
+Function _AddPublicationScope($Group, $Scope)
+{
+	if ($Scope)
+	{
+		foreach ($publicationUri in $Scope)
+		{
+			$link = New-Object Tridion.ContentManager.CoreService.Client.LinkWithIsEditableToRepositoryData;
+			$link.IdRef = $publicationUri;
+			$Group.Scope += $link;
+		}
+	}
+}
+
 Function _AddGroupMembership($Trustee, $GroupUri)
 {
 	if (!$GroupUri) { return; }
@@ -429,16 +442,7 @@ function New-TridionGroup
 			$group = _GetDefaultData $client 65568 $null $Name;
 			$group.Description = $groupDescription;
 			
-			if ($Scope)
-			{
-				foreach($publicationUri in $Scope)
-				{
-					$link = New-Object Tridion.ContentManager.CoreService.Client.LinkWithIsEditableToRepositoryData;
-					$link.IdRef = $publicationUri;
-					$group.Scope += $link;
-				}
-			}
-			
+			_AddPublicationScope $group $Scope;
 			_AddGroupMembership $group $MemberOf;
 			
 			if ($PSCmdLet.ShouldProcess("Group { Name: '$($group.Title)', Description: '$($group.Description)' }", "Create")) 
@@ -617,7 +621,7 @@ function Disable-TridionUser
     https://github.com/pkjaer/tridion-powershell-modules
 
     .Example
-    Disable-TridionUser -Id "tcm:0-25-65552"
+    Disable-TridionUser -User "tcm:0-25-65552"
     Disables the user with ID 'tcm:0-25-65552', preventing them from accessing the Tridion Content Manager.
 	
 	.Example
@@ -627,15 +631,13 @@ function Disable-TridionUser
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Low', DefaultParameterSetName='ById')]
     Param(
-			# The TCM URI of the user to disable
-            [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById')]
-			[ValidateNotNullOrEmpty()]
-            [string]$Id,
+			# The user to disable, either the TCM URI or the user object itself
+            [Parameter(Mandatory=$true, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+			[Alias('Id')]
+            $User,
 
-			# The User object of the user to disable
-            [Parameter(Mandatory=$true, ValueFromPipeline=$true, ParameterSetName='WithObject')]
-			[ValidateNotNullOrEmpty()]
-            [Tridion.ContentManager.CoreService.Client.UserData]$User
+			[Parameter()]
+			[switch]$PassThru
     )
 	
 	Begin
@@ -646,40 +648,24 @@ function Disable-TridionUser
     Process
     {
         if ($client -eq $null) { return; }
-        
-		switch($PsCmdlet.ParameterSetName)
+
+		$userObject = $User;
+
+		if (($User -is [string]) -or ($User -is [object] -and $User.GetType().Name -ne 'UserData'))
 		{
-			'ById' 
-			{ 
-				if (!$Id.EndsWith('-65552'))
-				{
-					Write-Error "'$Id' is not a valid User.";
-					return;
-				}
+			$itemId = _GetIdFromInput $User;
+			if (_IsNullUri($itemId)) { return; }
+			_AssertItemType $itemId 65552;
 				
-				$user = Get-TridionItem -Id $Id -ErrorAction SilentlyContinue -Verbose:($PSBoundParameters['Verbose'] -eq $true);
-				if ($user -eq $null) 
-				{ 
-					Write-Error "'$Id' is not a valid User.";
-					return; 
-				}
-				
-				break; 
-			}
-			'WithObject' 
-			{
-				if ($User -eq $null) { return; }
-				$user = $User;
-				break; 
-			}
+			$userObject = _GetItem $client $itemId;
 		}
 		
-		if ($PSCmdLet.ShouldProcess("User { Name: '$($user.Title)', Description: '$($user.Description)' }", "Disable")) 
+		if (!$userObject) { return; }
+		if ($PSCmdLet.ShouldProcess("User { Name: '$($userObject.Title)', Description: '$($userObject.Description)' }", "Disable")) 
 		{
-			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
-			$user.IsEnabled = $false;
-			$client.Save($user, $readOptions) | Out-Null;
-			Write-Verbose ("User '{0}' has been disabled." -f $user.Description);
+			$userObject.IsEnabled = $false;
+			$result = _SaveItem $client $userObject $false;
+			if ($PassThru) { return $result; }
 		}
     }
 	
@@ -717,7 +703,7 @@ function Enable-TridionUser
 	Re-enables all users with the first name 'Peter'.
 	
     #>
-    [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Low')]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Low', DefaultParameterSetName='ById')]
     Param(
 			# The TCM URI of the user to enable
             [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById')]
@@ -726,8 +712,11 @@ function Enable-TridionUser
 
 			# The User object of the user to enable
             [Parameter(Mandatory=$true, ValueFromPipeline=$true, ParameterSetName='WithObject')]
-			[ValidateNotNullOrEmpty()]
-            [Tridion.ContentManager.CoreService.Client.UserData]$User
+			[ValidateNotNull()]
+            $User,
+
+			[Parameter()]
+			[switch]$PassThru
     )
 	
 	Begin
@@ -743,35 +732,25 @@ function Enable-TridionUser
 		{
 			'ById' 
 			{ 
-				if (!$Id.EndsWith('-65552'))
-				{
-					Write-Error "'$Id' is not a valid User.";
-					return;
-				}
+				$itemId = _GetIdFromInput $Id;
+				if (_IsNullUri($itemId)) { return; }
+				_AssertItemType $itemId 65552;
 				
-				$user = Get-TridionItem -Id $Id -ErrorAction SilentlyContinue -Verbose:($PSBoundParameters['Verbose'] -eq $true);
-				if ($user -eq $null) 
-				{ 
-					Write-Error "'$Id' is not a valid User.";
-					return; 
-				}
-				
-				break; 
+				$user = _GetItem $client $itemId;
 			}
+
 			'WithObject' 
 			{
-				if ($User -eq $null) { return; }
 				$user = $User;
-				break; 
 			}
 		}
 		
-		if ($PSCmdLet.ShouldProcess("User { Name: '$($user.Title)', Description: '$($user.Description)' }", "Enable")) 
+		if ($user -eq $null) { return; }
+		if ($PSCmdLet.ShouldProcess("User { Name: '$($user.Title)', Description: '$($user.Description)' }", "Enable"))
 		{
-			$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
 			$user.IsEnabled = $true;
-			$client.Save($user, $readOptions) | Out-Null;
-			Write-Verbose ("User '{0}' has been enabled." -f $user.Description);
+			$result = _SaveItem $client $user $false;
+			if ($PassThru) { return $result; }
 		}
     }
 	

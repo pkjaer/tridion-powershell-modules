@@ -360,7 +360,7 @@ function New-TridionItem
 
 		$parentId = _GetIdFromInput $Parent;
 		$item = _GetDefaultData $client $ItemType $parentId $Name;
-        $result = _SaveItem $client $item;
+        $result = _SaveItem $client $item $true;
 		return $result;
     }
 	
@@ -429,12 +429,15 @@ function New-TridionPublication
 		
 		foreach($parent in $listOfParents)
 		{
-			$parentLink = New-Object Tridion.ContentManager.CoreService.Client.LinkToRepositoryData;
-			$parentLink.IdRef = $parent;
-			$publication.Parents += $parentLink;
+            if (!(_IsNullUri $parent))
+            {
+                $parentLink = New-Object Tridion.ContentManager.CoreService.Client.LinkToRepositoryData;
+                $parentLink.IdRef = $parent;
+                $publication.Parents += $parentLink;
+             }
 		}
 
-        $result = _SaveItem $client $publication;
+        $result = _SaveItem $client $publication $true;
 		
 		Close-TridionCoreServiceClient $client;
 		return $result;

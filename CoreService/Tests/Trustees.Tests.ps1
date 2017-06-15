@@ -24,14 +24,18 @@ Describe "Core Service Trustee Tests" {
 		# ***********************
 		# Mock Items
 		# ***********************
-		$user1 = [PSCustomObject]@{ Id = 'tcm:0-12-65552'; Title = 'DOMAIN\Administrator'; Description = 'Administrator'; Privileges = 1; };
-		$user2 = [PSCustomObject]@{ Id = 'tcm:0-13-65552'; Title = 'DOMAIN\User02'; Description = 'User 02'; Privileges = 0;};
+		$user1 = [PSCustomObject]@{ Id = 'tcm:0-12-65552'; Title = 'DOMAIN\Administrator'; Description = 'Administrator'; Privileges = 1; IsEnabled = $true; };
+		$user2 = [PSCustomObject]@{ Id = 'tcm:0-13-65552'; Title = 'DOMAIN\User02'; Description = 'User 02'; Privileges = 0; IsEnabled = $true; };
+		$disabledUser = [PSCustomObject]@{ Id = 'tcm:0-69-65552'; Title = 'DOMAIN\DisabledUser'; Description = 'Disabled User'; Privileges = 0; IsEnabled = $false; };
+		$enabledUser = [PSCustomObject]@{ Id = 'tcm:0-70-65552'; Title = 'DOMAIN\EnabledUser'; Description = 'Enabled User'; Privileges = 0; IsEnabled = $true; };
 		$group1 = [PSCustomObject]@{ Id = 'tcm:0-2-65568'; Title = 'System Administrator'; Description = 'SDL Web Content Manager Administrators'; ExtensionProperties = @{'Custom'='G1'} };
 		$group2 = [PSCustomObject]@{ Id = 'tcm:0-4-65568'; Title = 'Information Designer'; Description = 'Information Designer'; ExtensionProperties = @{'Custom'='G2'} };
 		
 		$existingItems = @{
 			$user1.Id = $user1;
 			$user2.Id = $user2;
+			$disabledUser.Id = $disabledUser;
+			$enabledUser.Id = $enabledUser;
 			$group1.Id = $group1;
 			$group2.Id = $group2;
 		};
@@ -59,7 +63,7 @@ Describe "Core Service Trustee Tests" {
 
 			switch($ItemType)
 			{
-				65552 { $properties += @{ Privileges = 0; GroupMemberships = @(); }; }
+				65552 { $properties += @{ IsEnabled = $true; Privileges = 0; GroupMemberships = @(); }; }
 				65568 { $properties += @{ Scope = @(); GroupMemberships = @(); }; }
 			}
 
@@ -76,6 +80,12 @@ Describe "Core Service Trustee Tests" {
 			}			
 		}
 		Mock _GetItem {
+			if ($Id -in @($enabledUser.Id, $disabledUser.Id))
+			{
+				# Always return a copy, so the state isn't actually changed between tests
+				return $existingItems[$Id].PSObject.Copy();
+			}
+
 			if ($Id -in $existingItems.Keys)
 			{
 				return $existingItems[$Id];
@@ -100,6 +110,26 @@ Describe "Core Service Trustee Tests" {
 				$Item.Id ="tcm:$publicationId-$random-$itemType";
 			}
 			return $Item;
+		}
+		Mock _AddPublicationScope { 
+			if ($Scope)
+			{
+				foreach ($publicationUri in $Scope)
+				{
+					$link = [PSCustomObject]@{ IdRef = $publicationUri };
+					$Group.Scope += $link;
+				}
+			}
+		}
+		Mock _AddGroupMembership { 
+			if (!$GroupUri) { return; }
+
+			foreach($uri in @($GroupUri))
+			{
+				$groupData = [PSCustomObject]@{ Group = @{ IdRef = $uri}; }
+				$Trustee.GroupMemberships += $groupData;
+			}
+			
 		}
 		Mock _ExpandPropertiesIfRequested { if ($ExpandProperties) { return $List | ForEach-Object { _GetItem $null $_.Id; } } else {return $List;} }
 		Mock _IsExistingItem { return ($Id -in $existingItems.Keys); }			
@@ -407,11 +437,14 @@ Describe "Core Service Trustee Tests" {
 				$group = ($testInput | New-TridionGroup -Name $name);
 
 				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+				Assert-MockCalled _AddPublicationScope -Times 1 -Scope It;
+				Assert-MockCalled _AddGroupMembership -Times 1 -Scope It;
 
 				$group.Id | Should Not BeNullOrEmpty;
 				$group.Id | Should Not Be 'tcm:0-0-0';
 				$group.Title | Should Be $name;
 				$group.Description | Should Be $name;
+
 				$group.Scope.Count | Should Be 2;
 				$group.Scope[0].IdRef | Should Be $scope[0];
 				$group.Scope[1].IdRef | Should Be $scope[1];
@@ -423,6 +456,8 @@ Describe "Core Service Trustee Tests" {
 				$group = New-TridionGroup -Name $name -Scope 'tcm:0-1-1';
 
 				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+				Assert-MockCalled _AddPublicationScope -Times 1 -Scope It;
+				Assert-MockCalled _AddGroupMembership -Times 1 -Scope It;
 
 				$group.Id | Should Not BeNullOrEmpty;
 				$group.Id | Should Not Be 'tcm:0-0-0';
@@ -440,6 +475,8 @@ Describe "Core Service Trustee Tests" {
 				$group = ($testInput | New-TridionGroup -Name $name);
 
 				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+				Assert-MockCalled _AddPublicationScope -Times 1 -Scope It;
+				Assert-MockCalled _AddGroupMembership -Times 1 -Scope It;
 
 				$group.Id | Should Not BeNullOrEmpty;
 				$group.Id | Should Not Be 'tcm:0-0-0';
@@ -456,6 +493,8 @@ Describe "Core Service Trustee Tests" {
 				$group = New-TridionGroup -Name $name -MemberOf $group1.Id;
 
 				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+				Assert-MockCalled _AddPublicationScope -Times 1 -Scope It;
+				Assert-MockCalled _AddGroupMembership -Times 1 -Scope It;
 
 				$group.Id | Should Not BeNullOrEmpty;
 				$group.Id | Should Not Be 'tcm:0-0-0';
@@ -471,6 +510,8 @@ Describe "Core Service Trustee Tests" {
 				$group = New-TridionGroup -Name $name;
 
 				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $true };
+				Assert-MockCalled _AddPublicationScope -Times 1 -Scope It;
+				Assert-MockCalled _AddGroupMembership -Times 1 -Scope It;
 
 				$group.Id | Should Not BeNullOrEmpty;
 				$group.Id | Should Not Be 'tcm:0-0-0';
@@ -621,5 +662,97 @@ Describe "Core Service Trustee Tests" {
 				$user.Title | Should Be $name;
 			}
 		}
+
+		Context "Disable-TridionUser" {
+			It "validates input parameters" {
+				{ Disable-TridionUser -Id $null } | Should Throw;
+				{ Disable-TridionUser -Id 'tcm:0-12-1' } | Should Throw;
+
+				{ Disable-TridionUser -Id '' } | Should Not Throw;
+				{ Disable-TridionUser -Id 'tcm:0-0-0' } | Should Not Throw;
+			}
+			
+			It "disposes the client after use" {
+				Disable-TridionUser -Id $enabledUser.Id;
+				Assert-MockCalled Close-TridionCoreServiceClient -Times 1 -Scope It;
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $false };
+			}
+			
+			It "supports passthru to return the result" {
+				$enabledUser.IsEnabled | Should Be $true;
+				$user = Disable-TridionUser -Id $enabledUser.Id -PassThru;
+
+				Assert-MockCalled _GetItem -Times 1 -Scope It -ParameterFilter { $Id -eq $enabledUser.Id };
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $false };
+				
+				$user.IsEnabled | Should Be $false;
+			}
+
+			It "supports piping in the user" {
+				$testInput = $enabledUser.PSObject.Copy();
+				$testInput.IsEnabled | Should Be $true;
+				$user = ($testInput | Disable-TridionUser -PassThru);
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $false };
+
+				$user.IsEnabled | Should Be $false;
+			}
+
+			It "supports piping in the Id by property name" {
+				$testInput = [PSCustomObject]@{ Id = $enabledUser.Id };
+				$user = ($testInput | Disable-TridionUser -PassThru);
+
+				Assert-MockCalled _GetItem -Times 1 -Scope It -ParameterFilter { $Id -eq $enabledUser.Id };
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $false };
+
+				$user.IsEnabled | Should Be $false;
+			}
+		}		
+	
+
+		Context "Enable-TridionUser" {
+			It "validates input parameters" {
+				{ Enable-TridionUser -Id $null } | Should Throw;
+				{ Enable-TridionUser -Id '' } | Should Throw;
+				{ Enable-TridionUser -Id 'tcm:0-12-1' } | Should Throw;
+
+				{ Enable-TridionUser -Id 'tcm:0-0-0' } | Should Not Throw;
+			}
+			
+			It "disposes the client after use" {
+				Enable-TridionUser -Id $disabledUser.Id;
+				Assert-MockCalled Close-TridionCoreServiceClient -Times 1 -Scope It;
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $false };
+			}
+			
+			It "supports passthru to return the result" {
+				$user = Enable-TridionUser -Id $disabledUser.Id -PassThru;
+
+				Assert-MockCalled _GetItem -Times 1 -Scope It -ParameterFilter { $Id -eq $disabledUser.Id };
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $false };
+				
+				$user.IsEnabled | Should Be $true;
+			}
+
+			It "supports piping in the user" {
+				$testInput = $disabledUser.PSObject.Copy();
+				$testInput.IsEnabled | Should Be $false;
+				$user = ($testInput | Enable-TridionUser -PassThru);
+
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $false };
+
+				$user.IsEnabled | Should Be $true;
+			}
+
+			It "supports piping in the Id by property name" {
+				$testInput = [PSCustomObject]@{ Id = $disabledUser.Id };
+				$user = ($testInput | Enable-TridionUser -PassThru);
+
+				Assert-MockCalled _GetItem -Times 1 -Scope It -ParameterFilter { $Id -eq $disabledUser.Id };
+				Assert-MockCalled _SaveItem -Times 1 -Scope It -ParameterFilter { $IsNew -eq $false };
+
+				$user.IsEnabled | Should Be $true;
+			}
+		}		
 	}
 }

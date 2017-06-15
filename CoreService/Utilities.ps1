@@ -52,7 +52,11 @@ function _GetMultipleIdsFromInput($Value)
 	$result = @();
 	foreach($val in @($Value))
 	{
-		$result += _GetIdFromInput $val;
+		$id = _GetIdFromInput $val;
+		if (![string]::IsNullOrWhiteSpace($id))
+		{ 
+			$result += $id;
+		}
 	}
 	return $result;
 }
@@ -126,14 +130,17 @@ function _GetDefaultData($Client, $ItemType, $Parent, $Name = $null)
 	return $result;
 }
 
-function _SaveItem($Client, $Item, $IsNew = $false)
+function _SaveItem($Client, $Item, $IsNew)
 {
 	$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
 	if ($IsNew)
 	{
 		return $Client.Create($Item, $readOptions);	
 	}
-	return $Client.Save($Item, $readOptions);
+	else 
+	{
+		return $Client.Save($Item, $readOptions);
+	}	
 }
 
 function _DeleteItem($Client, $Id)
