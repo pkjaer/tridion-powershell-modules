@@ -110,7 +110,9 @@ Function Install-ModuleFromWeb
 
 		foreach ($file in $Files)
 		{
-			$source = $BaseUrl + '/' + $file;
+			Write-Progress -Activity "Downloading module files" -Status $file -PercentComplete (($idx++ / $max) * 100);
+
+            $source = $BaseUrl + '/' + $file;
 			$destination = ReplaceSlashes -File (Join-Path -Path $baseDir -ChildPath $file);
 			try
 			{
@@ -121,9 +123,8 @@ Function Install-ModuleFromWeb
 				$errorMessage = $_.Exception.Message;
 				throw "Failed to download the file: '$source' to destination '$destination'. Reason: $errorMessage";
 			}
-			
-			Write-Progress -Activity "Downloading module files" -Status $file -PercentComplete ((++$idx / $max) * 100);
 		}
+        Write-Progress -Activity "Downloading module files" -Completed
 
 		Completed -ModuleName $ModuleName;
 	}
