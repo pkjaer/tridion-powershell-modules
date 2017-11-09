@@ -386,7 +386,15 @@ function New-TridionItem
     Process
     {
 		$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
-		$item = $client.GetDefaultData($ItemType, $Parent, $readOptions);
+
+		if ($client.GetDefaultData.OverloadDefinitions[0].IndexOf('ReadOptions readOptions') -gt 0)
+		{
+			$item = $client.GetDefaultData($ItemType, $Parent, $readOptions);
+		}
+		else
+		{
+			$item = $client.GetDefaultData($ItemType, $Parent);
+		}		
 		
 		if ($Title)
 		{
