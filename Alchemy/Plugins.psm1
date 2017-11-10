@@ -54,11 +54,11 @@ Function NormalizeServerUrl([string]$Host)
 
 Function GetMonitorJobs($Folder = $null)
 {
-	$jobs = Get-Job | Where { $_.Name.StartsWith("PluginChanged_") };
+	$jobs = Get-Job | Where-Object { $_.Name.StartsWith("PluginChanged_") };
 	
 	if (($jobs.Count -gt 0) -and ($Folder -ne $null))
 	{
-		return $jobs | Where { $Folder.StartsWith($_.Name.Substring(14) + '\') };
+		return $jobs | Where-Object { $Folder.StartsWith($_.Name.Substring(14) + '\') };
 	}
 
 	return $jobs;
@@ -99,7 +99,7 @@ Function Get-AlchemyPluginNameFromFile
 		
         $zip = Get-Item($File);
 		$a = [IO.Compression.ZipFile]::OpenRead($zip.FullName);
-        $entries = $a.Entries | where {$_.FullName -eq "a4t.xml"};
+        $entries = $a.Entries | Where-Object {$_.FullName -eq "a4t.xml"};
 		
 		if ($entries.Count -lt 1)
 		{
@@ -161,7 +161,7 @@ Function Install-AlchemyPlugin
 
 		if (!$Force)
 		{
-			$installedPlugins = Get-AlchemyPlugins -Verbose:$verboseRequested | Where { $_.name -eq $nameWithSpaces };
+			$installedPlugins = Get-AlchemyPlugins -Verbose:$verboseRequested | Where-Object { $_.name -eq $nameWithSpaces };
 			if ($installedPlugins.Count -gt 0)
 			{
 				Write-Warning "'$nameWithSpaces' is already installed.";
@@ -175,7 +175,7 @@ Function Install-AlchemyPlugin
 		$url = $server + "Alchemy/api/Plugins/Install";
 		$file = Get-Item $File;
 		
-		$response = $client.UploadFile($url, $file);
+		$client.UploadFile($url, $file) | Out-Null;
 		Write-Output "'$nameWithSpaces' has been installed.";
 	}
 }
@@ -209,7 +209,7 @@ Function Uninstall-AlchemyPlugin
 
 		if (!$Force)
 		{
-			$installedPlugins = Get-AlchemyPlugins -Verbose:$verboseRequested | Where { $_.name -eq $nameWithSpaces };
+			$installedPlugins = Get-AlchemyPlugins -Verbose:$verboseRequested | Where-Object { $_.name -eq $nameWithSpaces };
 			if ($installedPlugins.Count -lt 1)
 			{
 				Write-Verbose "'$nameWithSpaces' is not currently installed.";
@@ -222,7 +222,7 @@ Function Uninstall-AlchemyPlugin
 		$escapedName = $name.Replace(' ', '_');
 		
 		$url = $server + "Alchemy/api/Plugins/$escapedName/Uninstall";
-		$response = $client.UploadString($url, "{}");
+		$client.UploadString($url, "{}") | Out-Null;
 		Write-Output "'$nameWithSpaces' has been uninstalled.";
 	}
 }

@@ -1,7 +1,6 @@
 ﻿Set-StrictMode -Version Latest
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 <#
 **************************************************
@@ -39,14 +38,14 @@ Describe "Core Service Client Tests" {
 			# Tests
 			# ***********************
 			It "does not impersonate and connects as the current user by default" {
-				$client = Get-TridionCoreServiceClient;
+				Get-TridionCoreServiceClient | Out-Null;
 				Assert-MockCalled _NewAssemblyInstance -Times 1 -Scope It;
 				Assert-MockCalled _SetImpersonateUser -Times 0 -Scope It;
 				Assert-MockCalled _SetCredential -Times 0 -Scope It;
 			}
 			
 			It "supports impersonation" {
-				$client = Get-TridionCoreServiceClient -ImpersonateUserName 'TEST\User01';
+				Get-TridionCoreServiceClient -ImpersonateUserName 'TEST\User01' | Out-Null;
 				Assert-MockCalled _NewAssemblyInstance -Times 1 -Scope It;
 				Assert-MockCalled _SetImpersonateUser -Times 1 -Scope It;
 				Assert-MockCalled _SetCredential -Times 0 -Scope It;
@@ -56,7 +55,7 @@ Describe "Core Service Client Tests" {
 				$credential = New-Object System.Management.Automation.PSCredential -ArgumentList "Domain\User", ("P@ssw0rd" | ConvertTo-SecureString -AsPlainText -Force);			
 				Set-TridionCoreServiceSettings -Credential $credential;
 				
-				$client = Get-TridionCoreServiceClient;
+				Get-TridionCoreServiceClient | Out-Null;
 				Assert-MockCalled _NewAssemblyInstance -Times 1 -Scope It;
 				Assert-MockCalled _SetCredential -Times 1 -Scope It;
 				Assert-MockCalled _SetImpersonateUser -Times 0 -Scope It;

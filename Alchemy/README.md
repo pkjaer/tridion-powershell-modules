@@ -1,16 +1,15 @@
-### Tridion-Alchemy module
+# Tridion-Alchemy module
 
 This module contains cmdlets that allow you to manage [Alchemy](http://www.alchemywebstore.com) plugins for your Tridion Content Manager.
 Install, uninstall, or update plugins directly from PowerShell. Or let the Plugin Monitor cmdlet do it for you whenever your plugin changes.
 
+## Installation
 
-### Installation
 [Click here to view the installation instructions](https://github.com/pkjaer/tridion-powershell-modules/), which cover installation of all of the modules.
 
+## Release notes
 
-### Release notes
-
-v1.0.0.0
+### v1.0.0.0
 
 - Initial version of the module.
 - Supports getting a list of installed plugins (Get-AlchemyPlugins)

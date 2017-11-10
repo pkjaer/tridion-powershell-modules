@@ -89,7 +89,6 @@ Function _GetClientCredentialType($DefaultValue)
 
 Function _SetCredential($client, $credential)
 {
-	$userName = $credential.UserName;
 	$client.ClientCredentials.Windows.ClientCredential = [System.Net.NetworkCredential]$credential;
 }
 

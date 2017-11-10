@@ -19,7 +19,7 @@ $files = @(
 
 	
 # Download the installation script
-iwr "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/Shared/Installation/Install-ModuleFromWeb.ps1" | iex
+Invoke-WebRequest "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/Shared/Installation/Install-ModuleFromWeb.ps1" | Invoke-Expression
 
 # Install the above files and directories
 Install-ModuleFromWeb -ModuleName "Tridion-Alchemy" -BaseUrl $baseDownloadUrl -Files $files -Directories $directories;
