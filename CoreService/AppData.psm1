@@ -101,6 +101,7 @@ Function Get-TridionApplicationData
 		# The subject the data is attached to
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
 		[ValidateNotNullOrEmpty()]
+		[Alias('Id')]
         [string]$Subject
     )
 	
@@ -175,7 +176,8 @@ Function Set-TridionApplicationData
 
 		# The subject the data should be attached to
         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        [string]$Subject
+		[Alias('Id')]
+		[string]$Subject
 	)
 	
 	Begin
@@ -236,7 +238,8 @@ Function Remove-TridionApplicationData
         [string]$Application,
 		
 		# The subject the data should be attached to
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+		[Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+		[Alias('Id')]
         [string]$Subject
 	)
 	
