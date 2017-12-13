@@ -16,14 +16,17 @@ function Get-TridionWorkflowItems
 {
     <#
     .Synopsis
-    Gets a list of Workflow Items in Tridion Content Manager By Status or AssignedTo Filter
+    Get list of Workflow Items from Tridion Content Manager By Status or AssignedTo Filter
+	
     .Description
-    Gets a list of Workflow Items in Tridion Content Manager By Status or AssignedTo Filter
+    Get list of Workflow Items from Tridion Content Manager By Status or AssignedTo Filter
+	
     .Notes
     Example of properties available: Id, Title Etc.
     
     For a full list, consult the Content Manager Core Service API Reference Guide documentation 
     (Tridion.ContentManager.Data.CommunicationManagement.ProcessInstanceData object)
+	
     .Inputs
      [string] Status(Not Mandetory): Workflow ProcessInstanceData by status "Active" or "Hstoricle" (Bydefault is will show all the data)
 	 [string] AssignedToById: The processInstanceData assigned to the given ID of User or Group.
