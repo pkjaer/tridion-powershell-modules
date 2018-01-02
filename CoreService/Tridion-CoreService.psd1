@@ -12,7 +12,7 @@
 ModuleToProcess = ''
 
 # Version number of this module.
-ModuleVersion = '2.3.0.0'
+ModuleVersion = '2.4.0.0'
 
 # ID used to uniquely identify this module
 GUID = '32e566fb-d28d-43e7-8786-1181ef91a9fd'
@@ -27,7 +27,7 @@ CompanyName = 'SDL'
 Copyright = ''
 
 # Description of the functionality provided by this module
-Description = ''
+Description = "This project contains Windows PowerShell modules that allow you to easily interact with the SDL Tridion / SDL Web content management system and perform various administrative tasks. Currently supported Tridion versions: 2011 SP1, 2013 GA, 2013 SP1 and Web 8."
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '3.0'
@@ -81,7 +81,7 @@ AliasesToExport = '*'
 ModuleList = @()
 
 # List of all files packaged with this module
-FileList = @("AppData.psm1", "Client.psm1", "Items.psm1", "Publishing.psm1", "Settings.psm1", "Trustees.psm1")
+FileList = @("AppData.psm1", "Client.psm1", "Items.psm1", "Publishing.psm1", "Settings.psm1", "Trustees.psm1", "Utilities.ps1")
 
 # Private data to pass to the module specified in ModuleToProcess
 PrivateData = ''

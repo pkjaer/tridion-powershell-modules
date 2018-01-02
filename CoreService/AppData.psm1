@@ -1,4 +1,5 @@
 #Requires -version 3.0
+Set-StrictMode -Version Latest
 
 <#
 **************************************************
@@ -100,6 +101,7 @@ Function Get-TridionApplicationData
 		# The subject the data is attached to
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
 		[ValidateNotNullOrEmpty()]
+		[Alias('Id')]
         [string]$Subject
     )
 	
@@ -174,7 +176,8 @@ Function Set-TridionApplicationData
 
 		# The subject the data should be attached to
         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        [string]$Subject
+		[Alias('Id')]
+		[string]$Subject
 	)
 	
 	Begin
@@ -235,7 +238,8 @@ Function Remove-TridionApplicationData
         [string]$Application,
 		
 		# The subject the data should be attached to
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+		[Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+		[Alias('Id')]
         [string]$Subject
 	)
 	
@@ -266,7 +270,4 @@ Function Remove-TridionApplicationData
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Convert-TridionApplicationData
-Export-ModuleMember Get-TridionApplicationData
-Export-ModuleMember Set-TridionApplicationData
-Export-ModuleMember Remove-TridionApplicationData
+Export-ModuleMember Convert-Tridion*, Get-Tridion*, Set-Tridion*, Remove-Tridion* -Alias *

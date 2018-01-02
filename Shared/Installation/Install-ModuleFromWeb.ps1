@@ -14,7 +14,7 @@ Function EnsureDirectoriesExist([string]$ModuleName, $Directories)
 	# Locate the user's module directory
     $modulePaths = @($env:PSModulePath -Split ';');
 	$expectedPath = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath 'WindowsPowerShell\Modules';
-	$destination = $modulePaths | Where-Object { $_ -eq $expectedPath } | Select -First 1;
+	$destination = $modulePaths | Where-Object { $_ -eq $expectedPath } | Select-Object -First 1;
 	
 	if (-not $destination) 
 	{
@@ -110,7 +110,9 @@ Function Install-ModuleFromWeb
 
 		foreach ($file in $Files)
 		{
-			$source = $BaseUrl + '/' + $file;
+			Write-Progress -Activity "Downloading module files" -Status $file -PercentComplete (($idx++ / $max) * 100);
+
+            $source = $BaseUrl + '/' + $file;
 			$destination = ReplaceSlashes -File (Join-Path -Path $baseDir -ChildPath $file);
 			try
 			{
@@ -121,9 +123,8 @@ Function Install-ModuleFromWeb
 				$errorMessage = $_.Exception.Message;
 				throw "Failed to download the file: '$source' to destination '$destination'. Reason: $errorMessage";
 			}
-			
-			Write-Progress -Activity "Downloading module files" -Status $file -PercentComplete ((++$idx / $max) * 100);
 		}
+        Write-Progress -Activity "Downloading module files" -Completed
 
 		Completed -ModuleName $ModuleName;
 	}

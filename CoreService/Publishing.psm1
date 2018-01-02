@@ -1,4 +1,5 @@
 #Requires -version 3.0
+Set-StrictMode -Version Latest
 
 <#
 **************************************************
@@ -79,21 +80,112 @@ function Publish-TridionItem
     {
 		if ($client -eq $null) { return; }
 		
-		$publishIntructionData = New-Object Tridion.ContentManager.CoreService.Client.PublishInstructionData;
-		$publishIntructionData.RenderInstruction = New-Object Tridion.ContentManager.CoreService.Client.RenderInstructionData;
-		$publishIntructionData.ResolveInstruction = New-Object Tridion.ContentManager.CoreService.Client.ResolveInstructionData ;
+		$publishInstruction = New-Object Tridion.ContentManager.CoreService.Client.PublishInstructionData;
+		$publishInstruction.RenderInstruction = New-Object Tridion.ContentManager.CoreService.Client.RenderInstructionData;
+		$publishInstruction.ResolveInstruction = New-Object Tridion.ContentManager.CoreService.Client.ResolveInstructionData ;
 		$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
 
 		switch($PsCmdlet.ParameterSetName)
 		{
 			'ById'
 			{
-				return $client.Publish($Id, $publishIntructionData, $TargetId, $Priority, $readOptions);
+				return $client.Publish($Id, $publishInstruction, $TargetId, $Priority, $readOptions);
 			}
 			
 			'WithObject'
 			{
-				return $client.Publish($Item.Id, $publishIntructionData, $Target.Id, $Priority, $readOptions);
+				return $client.Publish($Item.Id, $publishInstruction, $Target.Id, $Priority, $readOptions);
+			}
+		}
+    }
+	
+	End
+	{
+		Close-TridionCoreServiceClient $client;
+	}
+}
+
+function Unpublish-TridionItem
+{
+    <#
+    .Synopsis
+    Unpublishes an item from the specified target.
+	
+    .Inputs
+    None.
+
+    .Outputs
+    None.
+
+    .Link
+    Get the latest version of this script from the following URL:
+    https://github.com/pkjaer/tridion-powershell-modules
+
+    .Example
+    Unpublish-TridionItem -Id 'tcm:1-59' -Target $publicationTarget
+	Unpublishes the item with ID 'tcm:1-59' from the Publication Target stored in variable $publicationTarget.
+
+    .Example
+    Unpublish-TridionItem -Id 'tcm:1-59' -TargetId 'tcm:0-1-65537'
+	Unpublishes the item with ID 'tcm:1-59' from Publication Target with ID 'tcm:0-1-65537' with normal priority.
+
+    .Example
+    Unpublish-TridionItem -Id 'tcm:1-59' -TargetId 'tcm:0-1-65537' -Priority High
+	Unpublishes the item with ID 'tcm:1-59' from Publication Target with ID 'tcm:0-1-65537' with high priority.
+
+    #>
+    [CmdletBinding()]
+    Param
+    (
+		# The TCM URI of the item to unpublish.
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Id,
+
+		# The TCM URI of the Publication Target to unpublish from
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=1)]
+		[ValidateNotNullOrEmpty()]
+        [string]$TargetId,
+		
+		# The item to unpublish.
+        [Parameter(Mandatory=$true, ValueFromPipeline=$true, ParameterSetName='WithObject', Position=0)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Item,
+
+		# The Publication Target to unpublish from
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='WithObject', Position=1)]
+		[ValidateNotNullOrEmpty()]
+        [string]$Target,
+		
+		# The priority you wish to unpublish it with (Low, Medium, High)
+		[Parameter(ValueFromPipelineByPropertyName=$true, Position=2)]
+		[ValidateSet('Low', 'Normal', 'High')]
+		[string]$Priority = 'Normal'
+    )
+	
+	Begin
+	{
+		$client = Get-TridionCoreServiceClient -Verbose:($PSBoundParameters['Verbose'] -eq $true);
+	}
+	
+    Process
+    {
+		if ($client -eq $null) { return; }
+		
+		$unpublishInstruction = New-Object Tridion.ContentManager.CoreService.Client.UnpublishInstructionData;
+		$unpublishInstruction.ResolveInstruction = New-Object Tridion.ContentManager.CoreService.Client.ResolveInstructionData;
+		$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
+
+		switch($PsCmdlet.ParameterSetName)
+		{
+			'ById'
+			{
+				return $client.Unpublish($Id, $unpublishInstruction, $TargetId, $Priority, $readOptions);
+			}
+			
+			'WithObject'
+			{
+				return $client.Unpublish($Item.Id, $unpublishInstruction, $Target.Id, $Priority, $readOptions);
 			}
 		}
     }
@@ -248,7 +340,7 @@ function Get-TridionPublishTransaction
 					if ($UserName)
 					{
 						Write-Verbose "Adding filter to only show Publish Transctions created by a user with name: $UserName";
-						$uid = Get-TridionUser -Title $UserName | Select -ExpandProperty 'Id';
+						$uid = Get-TridionUser -Title $UserName | Select-Object -ExpandProperty 'Id';
 						$f = New-Object Tridion.ContentManager.CoreService.Client.LinkToUserData;
 						$f.IdRef = $uid;
 						$filter.PublishedBy = $f;
@@ -334,7 +426,6 @@ function Remove-TridionPublishTransaction
 	{
 		Close-TridionCoreServiceClient $client;
 	}
-
 }
 
 
@@ -344,6 +435,4 @@ function Remove-TridionPublishTransaction
 * Export statements
 **************************************************
 #>
-Export-ModuleMember Publish-TridionItem
-Export-ModuleMember Get-TridionPublishTransaction
-Export-ModuleMember Remove-TridionPublishTransaction
+Export-ModuleMember Publish-Tridion*, Unpublish-Tridion*, Get-Tridion*, Remove-Tridion* -Alias *
