@@ -3,7 +3,7 @@
 # Do not continue if there's an error
 $ErrorActionPreference = 'Stop';
 
-$branch = 'master';
+$branch = 'develop';
 
 # Base URL to download the latest version from the internet
 $baseDownloadUrl = "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/${branch}/ContentDelivery";
