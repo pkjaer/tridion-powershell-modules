@@ -10,8 +10,9 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 ### v2.4.0.0
 
-- All cmdlets and their parameters have been reviewed and adjusted to fit the "[Strongly Encouraged Development Guidelines](https://msdn.microsoft.com/en-us/library/dd878270%28v=vs.85%29.aspx)" from Microsoft.
-  Aliases have been provided, so your existing scripts will continue to work. **Exception:** calling Get-TridionUser without parameters no longer returns the current user (see below).
+- Most cmdlets and their parameters have been reviewed and adjusted to fit the "[Strongly Encouraged Development Guidelines](https://msdn.microsoft.com/en-us/library/dd878270%28v=vs.85%29.aspx)" from Microsoft.
+  Aliases have been provided, so your existing scripts will likely continue to work. 
+  **Exception:** calling Get-TridionUser without parameters no longer returns the current user (see below).
 - Added support for the PowerShell pipeline as input to most functions.
 - Set-TridionCoreServiceSettings and Clear-TridionCoreServiceSettings now support -PassThru to return the updated settings.
 - Get-TridionPublications have been renamed to Get-TridionPublication.
