@@ -5,6 +5,8 @@
 * Private members
 **************************************************
 #>
+. (Join-Path $PSScriptRoot 'Utilities.ps1')
+
 
 <#
 **************************************************
@@ -12,7 +14,7 @@
 **************************************************
 #>
 
-function Get-TridionWorkflowItems
+function Get-TridionWorkflowItem
 {
     <#
     .Synopsis
@@ -28,9 +30,8 @@ function Get-TridionWorkflowItems
     (Tridion.ContentManager.Data.CommunicationManagement.ProcessInstanceData object)
 	
     .Inputs
-     [string] Status(Not Mandetory): Workflow ProcessInstanceData by status "Active" or "Hstoricle" (Bydefault is will show all the data)
-	 [string] AssignedToById: The processInstanceData assigned to the given ID of User or Group.
-     [string] AssignedToByTitle: The processInstanceData assigned to the given Title of User or Group. (For User provide : <domainname>\<username>)
+     [string] Status(Not Mandetory): Workflow ProcessInstanceData by status "Active" or "Historical" (By default it will show all the data)
+	 [string] AssignedTo: The processInstanceData assigned to the given ID/Title of User or Group. (For User Title provide : <domainname>\<username>)
 	
     .Outputs
     Returns a list of objects of type [Tridion.ContentManager.CoreService.Client.ProcessInstanceData].
@@ -44,44 +45,36 @@ function Get-TridionWorkflowItems
 	Returns a list of all workflow items within Tridion (Active and Historical).
 	
 	.Example
-    Get-TridionWorkflowItems -Status "Active"
+    Get-TridionWorkflowItem -Status "Active"
 	Returns a list of all workflow items within Tridion filtered By Status(Active) of The Workflow.
 	
 	.Example
-	Get-TridionWorkflowItems -Status "Historical"
+	Get-TridionWorkflowItem -Status "Historical"
 	Returns a list of all workflow items within Tridion filtered By Status(Historical) of The Workflow.
 	
 	.Example
-    Get-TridionWorkflowItems -AssignedToById "tcm:0-1014-65552"
-	Get-TridionWorkflowItems -AssignedToById "tcm:0-15-65568"
-	Returns a list of all workflow items within Tridion filtered by AssignedTo given ID of User or Group.
+    Get-TridionWorkflowItem -AssignedTo "tcm:0-1014-65552"
+	Get-TridionWorkflowItem -AssignedTo "tcm:0-15-65568"
+	Get-TridionWorkflowItem -AssignedTo "TRIDIONDEV\San"
+	Get-TridionWorkflowItem -AssignedTo "Developer"
+	Returns a list of all workflow items within Tridion filtered by AssignedTo given ID/Title of User or Group.
 	
 	.Example
-    Get-TridionWorkflowItems -AssignedToByTitle "TRIDIONDEV\San"
-	Get-TridionWorkflowItems -AssignedToByTitle "Developer"
-	Returns a list of all workflow items within Tridion filtered by AssignedTo given Title of User or Group.
-	
-	.Example
-    Get-TridionWorkflowItems -Status "Active" | Select-Object Title, Id
-	Get-TridionWorkflowItems -AssignedToById "tcm:0-1014-65552" | Select-Object Id,Title
+    Get-TridionWorkflowItem -Status "Active" | Select-Object Title, Id
+	Get-TridionWorkflowItem -AssignedTo "tcm:0-1014-65552" | Select-Object Id,Title
 	Returns a list of the Title, Id of all workflow items within Tridion filtered By Status(Active) or AssignedTo filter of The Workflow.
     #>
     [CmdletBinding(DefaultParameterSetName='Status')]
     Param
     (
 		[Parameter(ParameterSetName='Status')]
-		[ValidateSet('', 'Active', 'Historical')]
+		[ValidateSet('', 'Any', 'Active', 'Historical')]
 		[string]$Status,
 		
-		# The TCM URI of the Publication Target to load.
-        [Parameter(ParameterSetName='AssignedToById')]
+		[Parameter(ParameterSetName='AssignedTo')]
 		[ValidateNotNullOrEmpty()]
-        [string]$AssignedToById,
+        [string]$AssignedTo
 		
-		# The Title of the Publication Target to load. This is slower than specifying the ID.
-        [Parameter(ParameterSetName='AssignedToByTitle')]
-		[ValidateNotNullOrEmpty()]
-        [string]$AssignedToByTitle
 	)		
 	
 	Begin
@@ -106,123 +99,72 @@ function Get-TridionWorkflowItems
 				{
 					Write-Verbose "Loading list of Workflow Items...";
 					
-					if($Status -eq $null)
+					if($Status -eq $null -or $Status -eq '')
 					{
 						$filter.ProcessType = [Tridion.ContentManager.CoreService.Client.ProcessType]::Any;				
 					}
-					if($Status -eq "Active")
+					else
 					{
-						$filter.ProcessType = [Tridion.ContentManager.CoreService.Client.ProcessType]::Active;				
+						$filter.ProcessType = $Status
 					}
-					if($Status -eq "Historical")
-					{
-						$filter.ProcessType = [Tridion.ContentManager.CoreService.Client.ProcessType]::Historical;				
-					}			
 								
-					$WorkflowItemDetail = $client.GetSystemWideList($filter);					
+					$WorkflowItemDetail = _GetSystemWideList $client $filter;					
 					return $WorkflowItemDetail
 				}
-			    'AssignedToById'
+			    'AssignedTo'
 				{
-					Write-Verbose "Loading Publication Target with Id '$AssignedToById'..."
-					if ($AssignedToById -ne $null)
+					Write-Verbose "Loading Workflow items by AssignedTo '$AssignedTo'..."
+					$filter.ProcessType = [Tridion.ContentManager.CoreService.Client.ProcessType]::Active;
+					$WorkflowItemDetail = _GetSystemWideList $client $filter;
+					
+					if ($AssignedTo -ne $null)
 					{
-						if(!$AssignedToById.EndsWith('-65552'))
+						if($AssignedTo.StartsWith('tcm'))
 						{						
-							if(!$AssignedToById.EndsWith('-65568'))
+							if ($WorkflowItemDetail -ne $null)
 							{
-								Write-Error "'$AssignedToById' is not a valid User or Group TCM URI.";
-								return;
+								foreach($item in $WorkflowItemDetail)
+								{
+									$processInstanceData = $client.Read($item.Id,$readOption);
+									$acvities = $processInstanceData.Activities | Select-Object -Last 1;
+									$assignee = $acvities.Assignee.IdRef;
+									if ($assignee -eq $AssignedTo)
+									{
+									  $list.Add($processInstanceData)
+									}
+								}
+								return $list;
 							}
 							else
 							{
-								$groupData = Get-TridionGroup -Id $AssignedToById
-							    if($groupData -eq $null)
-								{
-									Write-Error "'$AssignedToById' is not a valid Group TCM URI.";
-									return;
-								}
-							}
+								Write-Error "No active workflow item found.";
+								return $null;
+							}		
 						}
 						else
 						{
-							$userData = Get-TridionUser -Id $AssignedToById
-							if($userData -eq $null)
+							if ($WorkflowItemDetail -ne $null)
 							{
-								Write-Error "'$AssignedToById' is not a valid User TCM URI.";
-								return;
+								foreach($item in $WorkflowItemDetail)
+								{
+									$processInstanceData = $client.Read($item.Id,$readOption);
+									$acvities = $processInstanceData.Activities | Select-Object -Last 1;
+									$assignee = $acvities.Assignee.Title;
+									if ($assignee -eq $AssignedTo)
+									{
+									  $list.Add($processInstanceData)
+									}
+								}
+								return $list;
+							}
+							else
+							{
+								Write-Error "No active workflow item found.";
+								return $null;
 							}							
 						}					
-					}
-					$filter.ProcessType = [Tridion.ContentManager.CoreService.Client.ProcessType]::Active;
-					$WorkflowItemDetail = $client.GetSystemWideList($filter);
-					if ($WorkflowItemDetail -ne $null)
-					{
-						foreach($item in $WorkflowItemDetail)
-						{
-							$processInstanceData = $client.Read($item.Id,$readOption);
-							$acvities = $processInstanceData.Activities | Select-Object -Last 1;
-							$assignee = $acvities.Assignee.IdRef;
-							if ($assignee -eq $AssignedToById)
-							{
-							  $list.Add($processInstanceData)
-							}
-						}
-						return $list;
-					}
-					else
-					{
-						Write-Error "No active workflow item found.";
-						return $null;
-					}					
-				}
-				'AssignedToByTitle'
-				{
-					if ($AssignedToByTitle -ne $null)
-					{
-						if([regex]::Match($AssignedToByTitle,'.*?\\.*?').Success)
-						{
-							$userData = Get-TridionUser -Title $AssignedToByTitle
-							if($userData -eq $null)
-							{
-								Write-Error "'$AssignedToByTitle' is not a valid User Name.";
-								return;
-							}
-						}
-						else
-						{
-							$groupData = Get-TridionGroup -Title $AssignedToByTitle
-							if($groupData -eq $null)
-							{
-								Write-Error "'$AssignedToByTitle' is not a valid Group Name.";
-								return;
-							}
-						}
-						
-					}
-					Write-Verbose "Loading Publication Target with title '$AssignedToByTitle'..."
-					$filter.ProcessType = [Tridion.ContentManager.CoreService.Client.ProcessType]::Active;
-					$WorkflowItemDetail = $client.GetSystemWideList($filter);
-					if ($WorkflowItemDetail -ne $null)
-					{
-						foreach($item in $WorkflowItemDetail)
-						{
-							$processInstanceData = $client.Read($item.Id,$readOption);
-				     		$acvities = $processInstanceData.Activities | Select-Object -Last 1;
-							$assignee = $acvities.Assignee.Title;
-							if ($assignee -eq $AssignedToByTitle)
-							{
-							  $list.Add($processInstanceData)
-							}
-						}
-						return $list;
-					}
-					else
-					{
-						Write-Error "No active workflow item found.";
-					    return $null;
-					}
-				}
+					}							
+				}				
 			}
         }
     }
