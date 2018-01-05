@@ -7,6 +7,49 @@
 #>
 . (Join-Path $PSScriptRoot 'Utilities.ps1')
 
+function _GetProcessFilter($ProcessType)
+{
+	$filter = New-Object Tridion.ContentManager.CoreService.Client.ProcessesFilterData;
+	$filter.ProcessType = $ProcessType;
+	return $filter;
+}
+
+function _FilterByAssignee($Client, $Items, $AssignedTo)
+{
+	if ($Items -eq $null) { return $null; }
+	$result = @();
+
+	foreach ($item in $Items)
+	{
+		$processInstance = _GetItem $Client $item.Id;
+
+		# When looking at finished processes, we should search through all activities ("it was once assigned to X").
+		# For active ones, we only care who about the current assignee.
+		$isProcessHistory = _IsObjectType $processInstance 'ProcessHistoryData';
+		$activities = $processInstance.Activities;
+		if (!$isProcessHistory)
+		{
+			$activities = $activities | Select-Object -Last 1;
+		}
+		
+		foreach ($activity in $activities)
+		{
+			$assignee = $activity.Assignee.Title;
+			if (_IsTcmUri $AssignedTo)
+			{
+				$assignee = $activity.Assignee.IdRef;
+			}
+
+			if ($assignee -like $AssignedTo)
+			{
+				$result += $processInstance;
+				break;
+			}
+		}
+	}
+
+	return $result;
+}
 
 <#
 **************************************************
@@ -18,64 +61,95 @@ function Get-TridionWorkflowItem
 {
     <#
     .Synopsis
-    Get list of Workflow Items from Tridion Content Manager By Status or AssignedTo Filter
+    Gets a list of workflow items from Tridion Content Manager.
 	
     .Description
-    Get list of Workflow Items from Tridion Content Manager By Status or AssignedTo Filter
+    Gets a list of workflow items from Tridion Content Manager, optionally filtered by status or assigned trustee.
 	
     .Notes
-    Example of properties available: Id, Title Etc.
+    Example of properties available: Id, Title, Etc.
     
     For a full list, consult the Content Manager Core Service API Reference Guide documentation 
     (Tridion.ContentManager.Data.CommunicationManagement.ProcessInstanceData object)
 	
     .Inputs
-     [string] Status(Not Mandetory): Workflow ProcessInstanceData by status "Active" or "Historical" (By default it will show all the data)
-	 [string] AssignedTo: The processInstanceData assigned to the given ID/Title of User or Group. (For User Title provide : <domainname>\<username>)
-	
+	None.
+
     .Outputs
-    Returns a list of objects of type [Tridion.ContentManager.CoreService.Client.ProcessInstanceData].
+	Returns a list of objects of type [Tridion.ContentManager.CoreService.Client.ProcessInstanceData] 
+	or [Tridion.ContentManager.CoreService.Client.ProcessHistoryData].
 	
     .Link
     Get the latest version of this script from the following URL:
     https://github.com/pkjaer/tridion-powershell-modules
 	
     .Example
-    Get-TridionWorkflowItems
-	Returns a list of all workflow items within Tridion (Active and Historical).
+    Get-TridionWorkflowItem
+	Returns a list of all workflow items (both active and historical).
 	
 	.Example
-    Get-TridionWorkflowItem -Status "Active"
-	Returns a list of all workflow items within Tridion filtered By Status(Active) of The Workflow.
+    Get-TridionWorkflowItem -Status Active
+	Returns a list of all currently active workflow items.
 	
 	.Example
-	Get-TridionWorkflowItem -Status "Historical"
-	Returns a list of all workflow items within Tridion filtered By Status(Historical) of The Workflow.
+	Get-TridionWorkflowItem -Status Historical
+	Returns a list of all historical (archived) workflow items.
 	
 	.Example
-    Get-TridionWorkflowItem -AssignedTo "tcm:0-1014-65552"
-	Get-TridionWorkflowItem -AssignedTo "tcm:0-15-65568"
-	Get-TridionWorkflowItem -AssignedTo "TRIDIONDEV\San"
-	Get-TridionWorkflowItem -AssignedTo "Developer"
-	Returns a list of all workflow items within Tridion filtered by AssignedTo given ID/Title of User or Group.
+	Get-TridionWorkflowItem -AssignedTo 'tcm:0-12-65552'
+	Returns a list of all workflow items (past and present) assigned to the user with ID 'tcm:0-12-65552'.
+
+	.Example
+	Get-TridionWorkflowItem -AssignedTo 'tcm:0-7-65568'
+	Returns a list of all workflow items (past and present) assigned to the group with ID 'tcm:0-7-65568'.
+
+	.Example
+	Get-TridionWorkflowItem -AssignedTo 'DOMAIN\Isaac'
+	Returns a list of all workflow items (past and present) assigned to the user with username 'DOMAIN\Isaac'.
+
+	.Example
+	Get-TridionWorkflowItem -AssignedTo 'Editor'
+	Returns a list of all workflow items (past and present) assigned to the 'Editor' group.
+
+	.Example
+	Get-TridionWorkflowItem -AssignedTo 'Editor' -Status Active
+	Returns a list of all active workflow items assigned to the 'Editor' group.
 	
 	.Example
-    Get-TridionWorkflowItem -Status "Active" | Select-Object Title, Id
-	Get-TridionWorkflowItem -AssignedTo "tcm:0-1014-65552" | Select-Object Id,Title
-	Returns a list of the Title, Id of all workflow items within Tridion filtered By Status(Active) or AssignedTo filter of The Workflow.
+	Get-TridionWorkflowItem -AssignedTo 'Editor' | Select-Object Id, Title
+	Returns a list of the ID and Title of all workflow items (past and present) assigned to the 'Editor' group.
+	
+	.Example
+	Get-TridionWorkflowItem -Status 'Active' | Select-Object Id, Title
+	Returns a list of the ID and Title of all currently active workflow items.
+
+	.Example
+	Get-TridionUser -Current | Get-TridionWorkflowItem
+	Returns a list of all workflow items (past and present) assigned to you.
+
+	.Example
+	Get-TridionWorkflowItem -AssignedTo 'SDL Web*'
+	Returns a list of all workflow items (past and present) assigned to any group whose name begins with 'SDL Web'
+
+	.Example
+	Get-TridionWorkflowItem -AssignedTo 'DOMAIN\*'
+	Returns a list of all workflow items (past and present) assigned to any user in the 'DOMAIN' domain.
     #>
     [CmdletBinding(DefaultParameterSetName='Status')]
     Param
     (
-		[Parameter(ParameterSetName='Status')]
-		[ValidateSet('', 'Any', 'Active', 'Historical')]
-		[string]$Status,
+		# Filter by assignee. This can be a TCM URI or a (partial) title of a user or group. Including this parameter makes it slower, due to more data being loaded.
+		[Parameter(ValueFromPipelineByPropertyName = $true)]
+		[Alias('Id')]
+		[string]$AssignedTo,
 		
-		[Parameter(ParameterSetName='AssignedTo')]
-		[ValidateNotNullOrEmpty()]
-        [string]$AssignedTo
-		
-	)		
+		# Filter by the status of the workflow process. Historical refers to processes that have been finished.
+		[ValidateSet('Any', 'Active', 'Historical')]
+		[string]$Status = 'Any',
+
+		# Load all properties for each entry in the list. By default, only some properties are loaded (for performance reasons).
+		[switch]$ExpandProperties
+	)
 	
 	Begin
 	{
@@ -84,88 +158,23 @@ function Get-TridionWorkflowItem
 	
     Process
     {
-		$filter = New-Object Tridion.ContentManager.CoreService.Client.ProcessesFilterData;
-		$acvities = new-object Tridion.ContentManager.CoreService.Client.ActivityData;
-		$readOption = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
-		$readOption.LoadFlags = [Tridion.ContentManager.CoreService.Client.LoadFlags]::None;
-		$processInstanceData = New-Object Tridion.ContentManager.CoreService.Client.ProcessInstanceData;
-		$list = New-Object -TypeName System.Collections.Generic.List[Tridion.ContentManager.CoreService.Client.ProcessInstanceData];
-					
         if ($client -ne $null)
         {
-			switch($PsCmdlet.ParameterSetName)
+			Write-Verbose "Loading list of workflow items with status '$Status'...";
+
+			$filter = _GetProcessFilter $Status;
+			$list = _GetSystemWideList $client $filter;
+
+			if ($AssignedTo)
 			{
-			    'Status'
-				{
-					Write-Verbose "Loading list of Workflow Items...";
-					
-					if($Status -eq $null -or $Status -eq '')
-					{
-						$filter.ProcessType = [Tridion.ContentManager.CoreService.Client.ProcessType]::Any;				
-					}
-					else
-					{
-						$filter.ProcessType = $Status
-					}
-								
-					$WorkflowItemDetail = _GetSystemWideList $client $filter;					
-					return $WorkflowItemDetail
-				}
-			    'AssignedTo'
-				{
-					Write-Verbose "Loading Workflow items by AssignedTo '$AssignedTo'..."
-					$filter.ProcessType = [Tridion.ContentManager.CoreService.Client.ProcessType]::Active;
-					$WorkflowItemDetail = _GetSystemWideList $client $filter;
-					
-					if ($AssignedTo -ne $null)
-					{
-						if($AssignedTo.StartsWith('tcm'))
-						{						
-							if ($WorkflowItemDetail -ne $null)
-							{
-								foreach($item in $WorkflowItemDetail)
-								{
-									$processInstanceData = $client.Read($item.Id,$readOption);
-									$acvities = $processInstanceData.Activities | Select-Object -Last 1;
-									$assignee = $acvities.Assignee.IdRef;
-									if ($assignee -eq $AssignedTo)
-									{
-									  $list.Add($processInstanceData)
-									}
-								}
-								return $list;
-							}
-							else
-							{
-								Write-Error "No active workflow item found.";
-								return $null;
-							}		
-						}
-						else
-						{
-							if ($WorkflowItemDetail -ne $null)
-							{
-								foreach($item in $WorkflowItemDetail)
-								{
-									$processInstanceData = $client.Read($item.Id,$readOption);
-									$acvities = $processInstanceData.Activities | Select-Object -Last 1;
-									$assignee = $acvities.Assignee.Title;
-									if ($assignee -eq $AssignedTo)
-									{
-									  $list.Add($processInstanceData)
-									}
-								}
-								return $list;
-							}
-							else
-							{
-								Write-Error "No active workflow item found.";
-								return $null;
-							}							
-						}					
-					}							
-				}				
+				Write-Verbose "Filtering the list to only include items assigned to '$AssignedTo'...";
+				$list = _FilterByAssignee $client $list $AssignedTo;
+
+				# _FilterByAssignee already expanded the properties (to determine the assignee)
+				$ExpandProperties = $false;
 			}
+
+			return _ExpandPropertiesIfRequested $list $ExpandProperties;
         }
     }
 	
