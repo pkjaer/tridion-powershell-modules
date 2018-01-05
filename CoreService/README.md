@@ -8,7 +8,11 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 ## Release notes
 
-### v2.4.0.0
+### v2.4.1
+
+- Fixed an issue that occurred during publishing of the module to PowerShell Gallery.
+
+### v2.4.0
 
 - Most cmdlets and their parameters have been reviewed and adjusted to fit the "[Strongly Encouraged Development Guidelines](https://msdn.microsoft.com/en-us/library/dd878270%28v=vs.85%29.aspx)" from Microsoft.
   Aliases have been provided, so your existing scripts will likely continue to work. 
@@ -18,7 +22,7 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 - Get-TridionPublications have been renamed to Get-TridionPublication.
   - It now supports look-ups by ID and (partial) Title. This will return all Publications that match the given title.
   - The parameter 'Parents' has been renamed to 'Parent' and supports passing a single value or an array and the values may be strings (URIs) or objects (other Publications).
-  - You may also set the parents using the pipeline (e.g. Get-TridionPublication -Title '500 Website *' | New-Publication -Title 'Inherets from all 500 Website Publications')
+  - You may also set the parents using the pipeline (e.g. Get-TridionPublication -Title '500 Website *' | New-Publication -Title 'Inherits from all 500 Website Publications')
 - Get-TridionUsers has been renamed to Get-TridionUser.
   - It now supports look-ups by ID, (partial) Title, (partial) Description, and a custom filtering script block. This will return all matching the criteria.
   - The -Filter parameter can now be piped into the method.
@@ -31,7 +35,7 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 Special thanks to Jacques Kors and @ronnqvistandreas for their contributions to this version.
 
-### v2.3.0.0
+### v2.3.0
 
 - Added a function to Publish items (Publish-TridionItem)
 - You may now run the module as a different user by specifying the Credential setting (e.g. "Set-TridionCoreServiceSettings -Credential (Get-Credential)")
@@ -43,7 +47,7 @@ Special thanks to Jacques Kors and @ronnqvistandreas for their contributions to 
 
 Special thanks to Albert Romkes, Jan Horsman, and Nuno Linhares for their contributions to this version.
 
-### v2.2.0.0
+### v2.2.0
 
 - Added these release notes.
 - Added support for disabling and enabling users (Disable-TridionUser, Enable-TridionUser).
@@ -55,25 +59,25 @@ Special thanks to Albert Romkes, Jan Horsman, and Nuno Linhares for their contri
 - Added Test-TridionItem, which returns a boolean indicating if the item exists in the Content Manager.
 - Added a new configuration setting called 'ConnectionSendTimeout', which controls the amount of time to wait for a connection before timing out.
 
-### v2.1.0.0
+### v2.1.0
 
 - Added support for managing application data (Get-TridionApplicationData, Set-TridionApplicationData, Remove-TridionApplicationData).
 - New-TridionUser now supports adding the user to any number of groups, through the -MemberOf parameter. The scope of the groups is 'All Publications'.
 
-### v2.0.3.0
+### v2.0.3
 
 - Added support for SDL Web 8
 - Get-TridionCoreServiceClient will now show an error if you have previously loaded a different version of the client (thanks, Dominic Cronin!)
 
-### v2.0.2.0
+### v2.0.2
 
 - Fixed an issue detecting the module path when the user had multiple matching directories under 'My Documents'.
 
-### v2.0.1.0
+### v2.0.1
 
 - Fixed an issue with the module path for installation.
 
-### v2.0.0.0
+### v2.0.0
 
 - Now officially requires PowerShell 3.0
 - Introduced a new Close-TridionCoreServiceClient method to simplify properly closing the client.
@@ -96,7 +100,7 @@ Special thanks to Albert Romkes, Jan Horsman, and Nuno Linhares for their contri
 - New-TridionUser: The isAdmin parameter has been renamed to MakeAdministrator and is now a switch.
 - Get-TridionCoreServiceClient: Added an optional parameter to  to overwrite the user to impersonate (can be used in a pipeline).
 
-### v1.0.2.0
+### v1.0.2
 
 - Added checks for $null before calling Close on the Core Service client.
 - Changed the TransactionProtocol and SecurityModel property to use the enumerations instead of strings (the conversion didn't work for everyone).
@@ -105,7 +109,7 @@ Special thanks to Albert Romkes, Jan Horsman, and Nuno Linhares for their contri
 - Added the module version to the settings (for information and for future automatic upgrade of settings stored on disk)
 - Moved the settings file to a new 'Settings' directory (created as needed) and the DLLs to a 'Clients' folder.
 
-### v1.1.0.0
+### v1.1.0
 
 - Removed support for the "2010" endpoint.
 - Consolidated all settings into a single Set-TridionCoreServiceSettings method.
@@ -114,12 +118,12 @@ Special thanks to Albert Romkes, Jan Horsman, and Nuno Linhares for their contri
 - Added a New-TridionGroup method to create Groups in the Content Manager.
 - Fixed the link to the latest version of the script.
 
-### v1.0.1.0
+### v1.0.1
 
 - Added support for 2013 SP1.
 - Added support for impersonation of users.
 - Fixed Get-TridionPublications not outputting verbose text when prompted to.
 
-### v1.0.0.0
+### v1.0.0
 
 - Initial version of the Tridion PowerShell Modules.
