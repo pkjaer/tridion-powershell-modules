@@ -8,6 +8,12 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 ## Release notes
 
+### v2.4.2
+
+- Added a function to get a list of workflow items (`Get-TridionWorkflowItem`) - optionally filtered by status and/or who the item is assigned to.
+
+Special thanks to Sayantan Basu for his contributions to this version.
+
 ### v2.4.1
 
 - Fixed an issue that occurred during publishing of the module to PowerShell Gallery.

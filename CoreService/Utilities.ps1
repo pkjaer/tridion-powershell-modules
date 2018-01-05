@@ -4,24 +4,45 @@
 **************************************************
 #>
 
-Function _AddProperty($Object, $Name, $Value)
+function _AddProperty($Object, $Name, $Value)
 {
 	Add-Member -InputObject $Object -MemberType NoteProperty -Name $Name -Value $Value;
 }
 
-Function _HasProperty($Object, $Name)
+function _HasProperty($Object, $Name)
 {
 	return Get-Member -InputObject $Object -Name $Name -MemberType NoteProperty;
 }
 
-Function _NewObjectWithProperties([Hashtable]$properties)
+function _NewObjectWithProperties([Hashtable]$Properties)
 {
-	return New-Object -TypeName PSObject -Property $properties;
+	return New-Object -TypeName PSObject -Property $Properties;
+}
+
+function _IsObjectType($Object, $TypeName)
+{
+	if ($Object)
+	{
+		return ($Object.GetType().Name -eq $TypeName);
+	}
+
+	return $false;
 }
 
 function _IsNullUri($Id) 
 {
 	return (!$Id -or $Id.Trim().ToLowerInvariant() -eq 'tcm:0-0-0')
+}
+
+function _IsTcmUri($Id) 
+{
+	if ($Id)
+	{
+		$matchesFormat = $Id -match '^tcm:[0-9]*-[0-9]*(-[0-9]*)?(-v[0-9]*)?$';
+		$itemType = _GetItemType $Id;
+		return $matchesFormat -and ($itemType -ne $null);
+	}
+	return $false;
 }
 
 function _GetIdFromInput($Value)
