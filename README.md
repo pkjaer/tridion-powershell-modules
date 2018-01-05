@@ -6,28 +6,27 @@ Currently supported Tridion versions: 2011 SP1, 2013 GA, 2013 SP1, Web 8.1 and W
 
 ## Installation
 
-The quickest way to install is to use the provided script:
+The modules are available on PowerShell Gallery. As such, they can be installed using the `Install-Module` cmdlet.
 
-1. Open a Windows PowerShell (v3.0+) console.
-2. Ensure that you can run unsigned local scripts, by calling `Set-ExecutionPolicy`. We recommend the `RemoteSigned` policy. See [Using the Set-ExecutionPolicy Cmdlet](http://technet.microsoft.com/en-us/library/ee176961.aspx) for more information.
-3. Start the installation by executing the following line:
+~~~~PowerShell
+Install-Module -Name Tridion-CoreService 
+~~~~
 
-`iwr "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/master/CoreService/Installation/Install.ps1" | iex`
+*_Note:_* if you are using an older version of PowerShell (less than version 5), you will need to install [PowerShellGet](https://docs.microsoft.com/en-us/powershell/gallery/psget/overview) first.
 
-And if you wish to get the Tridion-Alchemy module as well (for managing and developing Alchemy plugins):
+After the installation is complete, import the module(s) using `Import-Module` to use the features.
 
-`iwr "https://raw.githubusercontent.com/pkjaer/tridion-powershell-modules/master/Alchemy/Installation/Install.ps1" | iex`
+~~~~PowerShell
+Import-Module -Name Tridion-CoreService
+~~~~
 
-This will download the latest release, install it, and load the modules.
-Afterwards, you may wish to run the verification script ('Verify.ps1') located in the _Installation_ folders -- or simply start using the available commands.
-
-Should the above steps fail to work for you, please [let us know](https://github.com/pkjaer/tridion-powershell-modules/issues/new)! As an alternative to the installation script, follow the step-by-step instructions on the [Manual Installation](https://github.com/pkjaer/tridion-powershell-modules/wiki/Manual-Installation) page.
+Should the above steps fail to work for you, please [let us know](https://github.com/pkjaer/tridion-powershell-modules/issues/new)!
 
 ## Help
 
 You can get the list of all of the commands by typing this in PowerShell:
-`Get-Command -Module Tridion-CoreService,Tridion-Alchemy`
+`Get-Command -Module Tridion-*`
 
-Each of the commands also has help information available (including examples), which you can read by calling `Get-Help nameOfCommand` (e.g. `Get-Help Get-TridionUser`).
+Each command also has help information available (including examples), which you can read by calling `Get-Help nameOfCommand` (e.g. `Get-Help Get-TridionUser`).
 
 If you have any issues or questions, feel free to add an entry under [Issues](https://github.com/pkjaer/tridion-powershell-modules/issues).
