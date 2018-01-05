@@ -8,7 +8,7 @@ Currently supported Tridion versions: 2011 SP1, 2013 GA, 2013 SP1, Web 8.1 and W
 
 The modules are available on PowerShell Gallery. As such, they can be installed using the `Install-Module` cmdlet.
 
-~~~~PowerShell 
+~~~~PowerShell
 Install-Module -Name Tridion-CoreService 
 ~~~~
 
@@ -16,8 +16,8 @@ Install-Module -Name Tridion-CoreService
 
 After the installation is complete, import the module(s) using `Import-Module` to use the features.
 
-~~~~PowerShell 
-Import-Module -Name Tridion-CoreService 
+~~~~PowerShell
+Import-Module -Name Tridion-CoreService
 ~~~~
 
 Should the above steps fail to work for you, please [let us know](https://github.com/pkjaer/tridion-powershell-modules/issues/new)!
