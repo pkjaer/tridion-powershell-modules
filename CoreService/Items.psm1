@@ -152,12 +152,12 @@ function Get-TridionPublication
     #>
     [CmdletBinding(DefaultParameterSetName='ByPublicationType')]
 	Param(
-		# The TCM URI of the Publication Target to load.
+		# The TCM URI of the Publication to load.
         [Parameter(ValueFromPipelineByPropertyName=$true, ParameterSetName='ById', Position=0)]
 		[ValidateNotNullOrEmpty()]
         [string]$Id,
 
-		# The Title of the Publication Target to load. This is slower than specifying the ID.
+		# The Title of the Publication to load. This is slower than specifying the ID.
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true, ParameterSetName='ByTitle', Position=0)]
 		[ValidateNotNullOrEmpty()]
 		[Alias('Title')]
