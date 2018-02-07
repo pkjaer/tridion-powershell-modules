@@ -1,7 +1,6 @@
 ﻿using CoreService;
 using System;
 using System.Net;
-using System.Security.Principal;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.Xml;

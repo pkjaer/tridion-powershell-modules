@@ -1,13 +1,14 @@
-﻿using System.Management.Automation;
+﻿using CoreService;
+using System.Management.Automation;
 
 namespace Tridion.Community.PowerShell.CoreService.Cmdlets
 {
     [Cmdlet(VerbsCommon.New, Constants.CmdPrefix + "Item")]
-    [OutputType(typeof(global::CoreService.IdentifiableObjectData))]
+    [OutputType(typeof(IdentifiableObjectData))]
     public class NewItemCommand : CmdletBase
     {
         [Parameter(Position = 0, Mandatory = true, ValueFromPipelineByPropertyName = true, HelpMessage = Help.NewItem.ParamItemType)]
-        public global::CoreService.ItemType ItemType { get; set; }
+        public ItemType ItemType { get; set; }
 
         [Parameter(Position = 1, Mandatory = true, ValueFromPipelineByPropertyName = true, HelpMessage = Help.NewItem.ParamName)]
         [ValidateNotNullOrEmpty]

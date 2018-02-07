@@ -9,7 +9,7 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
     [OutputType(typeof(PublicationData))]
     public class NewPublicationCommand : CmdletBase
     {
-        private List<string> _parents = new List<string>();
+        private readonly List<string> _parents = new List<string>();
 
         [Parameter(Mandatory = true, ValueFromPipelineByPropertyName = true, HelpMessage = Help.NewPublication.ParamName)]
         [ValidateNotNullOrEmpty]
@@ -23,7 +23,6 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
 
         protected override void ProcessRecord()
         {
-            WriteVerbose($"Found parent: {Parent}");
             _parents.AddRange(Parent);
         }
 
