@@ -116,7 +116,7 @@ namespace Tridion.Community.PowerShell.CoreService
 
         private static Binding GetBinding(CoreServiceSettings settings)
         {
-            if (settings.ConnectionType == SupportedConnectionType.NetTcp)
+            if (settings.ConnectionType == SupportedConnectionType.NetTcp || settings.ConnectionType == SupportedConnectionType.Default)
             {
                 return GetNetTcpBinding(settings);
             }

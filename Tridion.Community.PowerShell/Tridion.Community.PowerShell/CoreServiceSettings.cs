@@ -27,7 +27,7 @@ namespace Tridion.Community.PowerShell.CoreService
             {
                 // TODO: Base URL on Version
                 // TODO: Simplify this to a few new properties? Protocol, Port?
-                bool netTcp = ConnectionType == SupportedConnectionType.NetTcp;
+                bool netTcp = ConnectionType == SupportedConnectionType.NetTcp || ConnectionType == SupportedConnectionType.Default;
                 bool basic = ConnectionType == SupportedConnectionType.Basic;
                 string protocol = UseSSL ? "https://" : netTcp ? "net.tcp://" : "http://";
                 string port = netTcp ? ":2660" : "";
