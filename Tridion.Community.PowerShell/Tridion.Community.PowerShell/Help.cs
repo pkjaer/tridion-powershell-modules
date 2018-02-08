@@ -43,6 +43,14 @@ Examples include 'Web', 'Content', and 'Mobile'. Omit to retrieve all Publicatio
             public const string ParamParent = "The Publication(s) you wish to make this Publication a child of. Accepts multiple values as an array.";
         }
 
+        internal static class NewGroup
+        {
+            public const string ParamName = "The name of the new Group. This is displayed to end-users.";
+            public const string ParamDescription = "The description of the new Group. Generally used to indicate the purpose of the group.";
+            public const string ParamScope = "A list of URIs for the Publications in which the new Group applies.";
+            public const string ParamMemberOf = "A list of URIs for the existing Groups that the new Group should be a part of.";
+        }
+
         internal static class GetList
         {
             public const string ParamId = "The TCM URI or WebDAV URL of the item to retrieve.";

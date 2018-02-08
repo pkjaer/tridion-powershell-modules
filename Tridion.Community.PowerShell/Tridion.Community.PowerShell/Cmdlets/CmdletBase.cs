@@ -49,6 +49,13 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
             return AsyncHelper.RunSync(() => Client.Instance.IsExistingObjectAsync(id));
         }
 
+        protected IEnumerable<string> GetIdsFromParam(PSObject[] parameter)
+        {
+            var result = new List<string>();
+            result.AddRange(parameter.Select(g => g.BaseObject is string id ? id : (string)g.Properties["Id"]?.Value));
+            return result;
+        }
+
         protected T[] GetLinks<T>(IEnumerable<string> ids) where T : Link, new()
         {
             if (ids == null) return new T[] { };
