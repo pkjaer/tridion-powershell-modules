@@ -8,9 +8,9 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
     [OutputType(typeof(IEnumerable<PublicationTargetData>))]
     public class GetPublicationTargetCommand : ListCmdlet
     {
-        protected override int ExpectedItemType => 65537;
+        protected override int ExpectedItemType => (int)ItemType.PublicationTarget;
         protected override string ItemTypeDescription => "Publication Target";
 
-        protected override SystemWideListFilterData Filter => new PublicationTargetsFilterData();
+        protected override SystemWideListFilterData SystemWideListFilter => new PublicationTargetsFilterData();
     }
 }

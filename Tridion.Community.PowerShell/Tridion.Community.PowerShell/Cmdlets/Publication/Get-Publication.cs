@@ -20,9 +20,9 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
         [Parameter(ParameterSetName = ParameterSetByPublicationType, Position = 2)]
         public override SwitchParameter ExpandProperties { get; set; }
 
-        protected override int ExpectedItemType => 1;
+        protected override int ExpectedItemType => (int)ItemType.Publication;
         protected override string ItemTypeDescription => "Publication";
 
-        protected override SystemWideListFilterData Filter => new PublicationsFilterData { PublicationTypeName = PublicationType };
+        protected override SystemWideListFilterData SystemWideListFilter => new PublicationsFilterData { PublicationTypeName = PublicationType };
     }
 }
