@@ -1,6 +1,5 @@
 ﻿using CoreService;
 using System.Collections.Generic;
-using System.Linq;
 using System.Management.Automation;
 
 namespace Tridion.Community.PowerShell.CoreService.Cmdlets
@@ -20,13 +19,17 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
         [Alias("Title")]
         public string Name { get; set; }
 
+        // Filtering script block. You can use this to filter based on any criteria.
+        [Parameter(Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true, ParameterSetName = ParameterSetAll)]
+        public ScriptBlock Filter { get; set; }
+
         [Parameter(ParameterSetName = ParameterSetAll)]
         [Parameter(ParameterSetName = ParameterSetByName)]
         public virtual SwitchParameter ExpandProperties { get; set; }
 
         protected abstract int ExpectedItemType { get; }
         protected abstract string ItemTypeDescription { get; }
-        protected abstract SystemWideListFilterData Filter { get; }
+        protected abstract SystemWideListFilterData SystemWideListFilter { get; }
 
         protected override void ProcessRecord()
         {
@@ -36,10 +39,13 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
                     WriteObject(GetItemById());
                     break;
                 case ParameterSetByName:
-                    WriteAll(GetItemsByName());
+                    WriteVerbose($"Loading {ItemTypeDescription}(s) named '{Name}'...");
+                    Filter = CreateLikeFilter("Title", Name);
+                    WriteAll(GetItems());
                     break;
                 default:
-                    WriteAll(GetAllItems());
+                    WriteVerbose($"Loading all {ItemTypeDescription}s...");
+                    WriteAll(GetItems());
                     break;
             }
         }
@@ -56,25 +62,46 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
                 : null;
         }
 
-        protected IEnumerable<IdentifiableObjectData> GetItemsByName()
+        protected IEnumerable<IdentifiableObjectData> GetItems()
         {
-            WriteVerbose($"Loading {ItemTypeDescription}(s) named '{Name}'...");
-
-            var list = AsyncHelper.RunSync(() => Client.Instance.GetSystemWideListAsync(Filter));
-            return ExpandPropertiesIfRequested(FilterByName(list));
+            var list = AsyncHelper.RunSync(() => Client.Instance.GetSystemWideListAsync(SystemWideListFilter));
+            // Applying the filter first would give better performance (fewer items to fully load)
+            // But if the filter were based on properties that aren't returned by a list command, it wouldn't work.
+            // Thus the filter is applied *after* expanding the properties.
+            return ApplyFilter(ExpandPropertiesIfRequested(list));
         }
 
-        protected IEnumerable<IdentifiableObjectData> GetAllItems()
+        protected ScriptBlock CreateLikeFilter(string propertyName, string value)
         {
-            WriteVerbose($"Loading all {ItemTypeDescription}s...");
-
-            var list = AsyncHelper.RunSync(() => Client.Instance.GetSystemWideListAsync(Filter));
-            return ExpandPropertiesIfRequested(list);
+            return ScriptBlock.Create($"{{ $_.{propertyName} -like '{value}'}}");
         }
 
-        protected IEnumerable<IdentifiableObjectData> FilterByName(IEnumerable<IdentifiableObjectData> list)
+        protected IEnumerable<IdentifiableObjectData> ApplyFilter(IEnumerable<IdentifiableObjectData> list)
         {
-            return list.Where(p => Like(p.Title, Name));
+            if (Filter != null)
+            {
+                WriteVerbose("Filtering list...");
+                return Where(list, Filter);
+            }
+            return list;
+        }
+
+        protected IEnumerable<T> Where<T>(IEnumerable<T> list, ScriptBlock filterExpr) where T : class
+        {
+            // This would normally be handled by a call to ScriptBlock.InvokeWithContext but it doesn't exist (yet?) in .NET Standard
+            string filterScript = "$args[0] | Where-Object " + filterExpr.Ast;
+            WriteDebug("Filtering using expression: " + filterScript);
+            var filter = ScriptBlock.Create(filterScript);
+
+            var result = new List<T>();
+            foreach (var entry in filter.Invoke(list))
+            {
+                if (entry?.BaseObject is T outEntry)
+                {
+                    result.Add(outEntry);
+                }
+            }
+            return result;
         }
 
         protected IEnumerable<IdentifiableObjectData> ExpandPropertiesIfRequested(IEnumerable<IdentifiableObjectData> items)

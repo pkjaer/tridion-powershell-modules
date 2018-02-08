@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
-using System.Text.RegularExpressions;
 
 namespace Tridion.Community.PowerShell.CoreService.Cmdlets
 {
@@ -48,11 +47,6 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
         protected bool IsExistingItem(string id)
         {
             return AsyncHelper.RunSync(() => Client.Instance.IsExistingObjectAsync(id));
-        }
-
-        protected bool Like(string data, string pattern)
-        {
-            return new Regex(pattern).IsMatch(data);
         }
 
         protected T[] GetLinks<T>(IEnumerable<string> ids) where T : Link, new()
