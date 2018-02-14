@@ -7,6 +7,14 @@
             public const string ParamId = "The TCM URI or WebDAV URL of the item to retrieve.";
         }
 
+        internal static class GetChildItem
+        {
+            public const string ParamParent = "The parent organization item to query. Either the TCM URI, WebDAV URL, or the parent object itself.";
+            public const string ParamRecurse = "If specified, also returns all child items in nested organizational items.";
+            public const string ParamLevel = "If specified, includes a Level property on each object to indicate the nested level of the item.";
+            public const string ParamExpandProperties = "If specified, loads all properties for each entry in the list. By default, only some properties are loaded (for performance reasons).";
+        }
+
         internal static class NewItem
         {
             public const string ParamItemType = "The item type of the new item.";
@@ -61,13 +69,13 @@ Examples include 'Web', 'Content', and 'Mobile'. Omit to retrieve all Publicatio
 
         internal static class DisableUser
         {
-            public const string ParamUser = "The user to disable. Either the TCM URI or the user object itself.";
+            public const string ParamUser = "The user to disable. Either the TCM URI, WebDAV URL, or the user object itself.";
             public const string ParamPassThru = "If specified, the modified user is returned from the command.";
         }
 
         internal static class EnableUser
         {
-            public const string ParamUser = "The user to enable. Either the TCM URI or the user object itself.";
+            public const string ParamUser = "The user to enable. Either the TCM URI, WebDAV URL, or the user object itself.";
             public const string ParamPassThru = "If specified, the modified user is returned from the command.";
         }
 
