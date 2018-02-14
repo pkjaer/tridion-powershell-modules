@@ -59,6 +59,18 @@ Examples include 'Web', 'Content', and 'Mobile'. Omit to retrieve all Publicatio
             public const string ParamMakeAdministrator = "If set, the new user will have system administrator privileges. Use with caution.";
         }
 
+        internal static class DisableUser
+        {
+            public const string ParamUser = "The user to disable. Either the TCM URI or the user object itself.";
+            public const string ParamPassThru = "If specified, the modified user is returned from the command.";
+        }
+
+        internal static class EnableUser
+        {
+            public const string ParamUser = "The user to enable. Either the TCM URI or the user object itself.";
+            public const string ParamPassThru = "If specified, the modified user is returned from the command.";
+        }
+
         internal static class GetList
         {
             public const string ParamId = "The TCM URI or WebDAV URL of the item to retrieve.";

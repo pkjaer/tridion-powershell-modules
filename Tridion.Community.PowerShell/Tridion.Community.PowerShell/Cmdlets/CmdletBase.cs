@@ -59,10 +59,45 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
             return AsyncHelper.RunSync(() => Client.Instance.IsExistingObjectAsync(id));
         }
 
+        protected string GetIdFromParam(PSObject parameter)
+        {
+            return GetIdsFromParam(new[] { parameter })?.FirstOrDefault();
+        }
+
         protected IEnumerable<string> GetIdsFromParam(PSObject[] parameter)
         {
             var result = new List<string>();
-            result.AddRange(parameter.Select(g => g.BaseObject is string id ? id : (string)g.Properties["Id"]?.Value));
+            result.AddRange(parameter.Select(p => p.BaseObject is string id ? id : (string)p.Properties["Id"]?.Value));
+            return result;
+        }
+
+        protected T GetIdentifiableObjectFromParam<T>(PSObject parameter) where T : IdentifiableObjectData
+        {
+            return GetIdentifiableObjectsFromParam<T>(new[] { parameter })?.FirstOrDefault();
+        }
+
+        protected IEnumerable<T> GetIdentifiableObjectsFromParam<T>(PSObject[] parameter) where T : IdentifiableObjectData
+        {
+            var result = new List<T>();
+            foreach (var p in parameter)
+            {
+                if (p.BaseObject is T obj)
+                {
+                    WriteDebug($"Parameter is of type {typeof(T).Name} -- reusing the object.");
+                    result.Add(obj);
+                }
+                else if (p.BaseObject is string id)
+                {
+                    WriteDebug($"Parameter is a string -- loading the full item (ID = {id}).");
+                    var item = AsyncHelper.RunSync(() => Client.Instance.ReadAsync(id, Client.DefaultReadOptions));
+                    result.Add((T)item);
+                }
+                else
+                {
+                    WriteWarning($"Unexpected parameter type: {p.BaseObject.GetType().FullName}");
+                }
+            }
+
             return result;
         }
 
