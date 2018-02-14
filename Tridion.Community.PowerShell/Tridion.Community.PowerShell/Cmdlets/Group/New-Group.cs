@@ -1,15 +1,12 @@
 ﻿using CoreService;
-using System.Collections.Generic;
 using System.Management.Automation;
 
 namespace Tridion.Community.PowerShell.CoreService.Cmdlets
 {
     [Cmdlet(VerbsCommon.New, Constants.CmdPrefix + "Group")]
     [OutputType(typeof(GroupData))]
-    public class NewGroupCommand : CmdletBase
+    public class NewGroupCommand : NewTrusteeCmdlet
     {
-        protected readonly List<string> _memberOf = new List<string>();
-
         [Parameter(Position = 0, Mandatory = true, ValueFromPipelineByPropertyName = true, HelpMessage = Help.NewGroup.ParamName)]
         [ValidateNotNullOrEmpty]
         [Alias("Title")]
@@ -19,18 +16,10 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
         public string Description { get; set; }
 
         [Parameter(Position = 2, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true, HelpMessage = Help.NewGroup.ParamMemberOf)]
-        public PSObject[] MemberOf { get; set; }
+        public override PSObject[] MemberOf { get; set; }
 
         [Parameter(Position = 3, ValueFromPipelineByPropertyName = true, HelpMessage = Help.NewGroup.ParamScope)]
         public string[] Scope { get; set; }
-
-        protected override void ProcessRecord()
-        {
-            if (MemberOf != null)
-            {
-                _memberOf.AddRange(GetIdsFromParam(MemberOf));
-            }
-        }
 
         protected override void EndProcessing()
         {
@@ -54,22 +43,6 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
             {
                 group.Scope = GetLinks<LinkWithIsEditableToRepositoryData>(Scope);
             }
-        }
-
-        private void AddGroupMemberships(GroupData group)
-        {
-            if (_memberOf.Count < 1) return;
-
-            var memberships = new List<GroupMembershipData>();
-            foreach(var uri in _memberOf)
-            {
-                memberships.Add(new GroupMembershipData
-                {
-                    Group = new LinkToGroupData { IdRef = uri }
-                });
-            }
-
-            group.GroupMemberships = memberships.ToArray();
         }
     }
 }

@@ -3,11 +3,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
+using System.Text.RegularExpressions;
 
 namespace Tridion.Community.PowerShell.CoreService.Cmdlets
 {
     public class CmdletBase : PSCmdlet
     {
+        protected static Regex _tcmUriRegex = new Regex("tcm:([0-9]+)-([0-9]+)(-([0-9]+))?(-v([0-9]+))?", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+
         protected bool IsPresent(string parameterName)
         {
             return MyInvocation.BoundParameters.ContainsKey(parameterName);
@@ -37,6 +40,13 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
             {
                 throw new ArgumentException($"Unexpected item type '{itemType}'. Expected '{expectedItemType}'.");
             }
+        }
+
+        protected bool IsTcmUri(string input)
+        {
+            return !string.IsNullOrWhiteSpace(input)
+                ? _tcmUriRegex.IsMatch(input)
+                : false;
         }
 
         protected bool IsNullUri(string id)

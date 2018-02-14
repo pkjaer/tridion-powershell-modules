@@ -51,6 +51,14 @@ Examples include 'Web', 'Content', and 'Mobile'. Omit to retrieve all Publicatio
             public const string ParamMemberOf = "A list of URIs for the existing Groups that the new Group should be a part of.";
         }
 
+        internal static class NewUser
+        {
+            public const string ParamName = "The username (including domain) of the new User";
+            public const string ParamDescription = "The description (or 'friendly name') of the user. This is displayed throughout the UI.";
+            public const string ParamMemberOf = "A list of URIs for the existing Groups that the new User should be a part of. Supports also Titles of the groups.";
+            public const string ParamMakeAdministrator = "If set, the new user will have system administrator privileges. Use with caution.";
+        }
+
         internal static class GetList
         {
             public const string ParamId = "The TCM URI or WebDAV URL of the item to retrieve.";
