@@ -43,6 +43,7 @@ Function _GetDefaultSettings
 		"ConnectionType" = "Default";
 		"ModuleVersion" = $moduleVersion;
 		"CredentialType" = "Default";
+		"AdfsUrl" = "https://localhost/adfs/services/trust/13/usernamemixed";
 	};
 }
 
@@ -52,7 +53,7 @@ Function _GetSettings
 	{
 		$script:Settings = _RestoreSettings;
 	}
-	
+
 	return $script:Settings;
 }
 
@@ -90,7 +91,7 @@ Function _RestoreSettings
 {
 	$settingsDir = Join-Path $PSScriptRoot 'Settings'
 	$settingsFile = Join-Path $settingsDir 'CoreServiceSettings.xml';
-	
+
 	if (Test-Path $settingsFile)
 	{
 		try
@@ -119,7 +120,7 @@ Function _PersistSettings($settings)
 			{
 				New-Item -Path $settingsDir -ItemType Container | Out-Null
 			}
-			
+
 			Export-Clixml -Path $settingsFile -InputObject $settings -Confirm:$false -Force;
 			$script:Settings = $settings;
 		}
@@ -183,7 +184,7 @@ Function Set-TridionCoreServiceSettings
     .Link
     Get the latest version of this script from the following URL:
     https://github.com/pkjaer/tridion-powershell-modules
-5
+
     .Example
     Set-TridionCoreServiceSettings -HostName "machine.domain" -Version "2013-SP1" -ConnectionType netTcp
 	Makes the module connect to a Core Service hosted on "machine.domain", using netTcp bindings and the 2013 SP1 version of the service.
@@ -209,16 +210,19 @@ Function Set-TridionCoreServiceSettings
 		[Parameter()]
 		[string]$CredentialType,
 
-		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp', 'Basic', 'Basic-SSL')]
+		[ValidateSet('', 'Default', 'SSL', 'LDAP', 'LDAP-SSL', 'netTcp', 'Basic', 'Basic-SSL', 'Federation', 'Federation-SSL')]
 		[Parameter()]
 		[string]$ConnectionType,
-		
+
 		[Parameter()]
 		[string]$ConnectionSendTimeout,
-		
+
+		[Parameter()]
+		[string]$AdfsUrl,
+
 		[Parameter()]
 		[switch]$Persist,
-		
+
 		[Parameter()]
 		[switch]$PassThru
     )
@@ -233,6 +237,7 @@ Function Set-TridionCoreServiceSettings
 		$hostNameSpecified = ($parametersSpecified -contains 'HostName');
 		$versionSpecified = ($parametersSpecified -contains 'Version');
 		$credentialTypeSpecified = ($parametersSpecified -contains 'CredentialType');
+		$adfsUrlSpecified = ($parametersSpecified -contains 'AdfsUrl');
 		
 		$result = _GetSettings;
 		if ($connectionTypeSpecified) { $result.ConnectionType = $ConnectionType; }
@@ -240,25 +245,29 @@ Function Set-TridionCoreServiceSettings
 		if ($credentialSpecified) { $result.Credential = $Credential; }
 		if ($hostNameSpecified) { $result.HostName = $HostName; }
 		if ($versionSpecified) { $result.Version = $Version; }
-		if ($credentialTypeSpecified)  {  $result.CredentialType = $CredentialType;  }
+		if ($credentialTypeSpecified)  { $result.CredentialType = $CredentialType; }
+		if ($adfsUrlSpecified)  { $result.AdfsUrl = $AdfsUrl; }
 
 		if ($versionSpecified -or $hostNameSpecified -or $connectionTypeSpecified)
 		{
 			$netTcp =  ($result.connectionType -eq "netTcp");
 			$host = $result.HostName;
 			$basic =  ($result.connectionType -eq "Basic" -or $result.connectionType -eq "Basic-SSL");
+			$federation = ($result.connectionType -eq "Federation" -or $result.connectionType -eq "Federation-SSL");
 			$protocol = "http://";
 			$port = "";
 
 			$result.ClassName = if ($basic) { 'Tridion.ContentManager.CoreService.Client.CoreServiceClient' }
-												else { 'Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient' };
-			
+								else { if ($federation) { 'Tridion.ContentManager.CoreService.Client.ISessionAwareCoreService' }
+								else { 'Tridion.ContentManager.CoreService.Client.SessionAwareCoreServiceClient' } };
+
 			switch($result.connectionType)
 			{
-				"SSL" 		{ $protocol = "https://"; }
-				"LDAP-SSL" 	{ $protocol = "https://"; }
-				"Basic-SSL" { $protocol = "https://"; }
-				"netTcp"	{ $protocol = "net.tcp://"; $port = ":2660"; }
+				"SSL"            { $protocol = "https://"; }
+				"LDAP-SSL"       { $protocol = "https://"; }
+				"Basic-SSL"      { $protocol = "https://"; }
+				"Federation-SSL" { $protocol = "https://"; }
+				"netTcp"         { $protocol = "net.tcp://"; $port = ":2660"; }
 			}
 			
 			$clientDir = Join-Path $PSScriptRoot 'Clients';
@@ -305,9 +314,10 @@ Function Set-TridionCoreServiceSettings
 				"Web-8.5"
 				{
 					$result.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Web_8_5.dll';
-					$relativeUrl = if ($netTcp) { "/CoreService/201603/netTcp" } 
-												else { if ($basic) {"/webservices/CoreService201603.svc/basicHttp"} 
-												else  { "/webservices/CoreService201603.svc/wsHttp" } };
+					$relativeUrl = if ($netTcp) { "/CoreService/201603/netTcp" }
+												else { if ($basic) {"/webservices/CoreService201603.svc/basicHttp"}
+												else { if ($federation) {"/webservices/CoreService201603.svc/wsFederationHttp"}
+												else  { "/webservices/CoreService201603.svc/wsHttp" } } };
 					$result.EndpointUrl = (@($protocol, $host, $port, $relativeUrl) -join "");
 				}
 			}

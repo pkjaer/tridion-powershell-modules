@@ -1,5 +1,6 @@
 #Requires -version 3.0
 Set-StrictMode -Version Latest
+$script:channelFactory = $null;
 
 <#
 **************************************************
@@ -56,6 +57,13 @@ Function _GetCoreServiceBinding
 			$binding.Security.Mode = [System.ServiceModel.BasicHttpsSecurityMode]::Transport;
 			$binding.Security.Transport.ClientCredentialType = (_GetClientCredentialType -DefaultValue "Windows")
 		}
+		"Federation-SSL"
+		{
+			$binding = New-Object System.ServiceModel.WS2007FederationHttpBinding;
+			$binding.Security.Mode = [System.ServiceModel.WSFederationHttpSecurityMode]::TransportWithMessageCredential;
+			$binding.Security.Message.IssuerAddress = 'http://some.url'
+			$binding.Security.Message.IssuerBinding = New-Object -TypeName System.ServiceModel.BasicHttpBinding
+		}
 		default 
 		{ 
 			$binding = New-Object System.ServiceModel.WSHttpBinding; 
@@ -63,7 +71,7 @@ Function _GetCoreServiceBinding
 			$binding.Security.Transport.ClientCredentialType = (_GetClientCredentialType -DefaultValue "Windows")
 		}
 	}
-	
+
 	$binding.SendTimeout = $settings.ConnectionSendTimeout;
 	$binding.MaxReceivedMessageSize = [int]::MaxValue;
 	$binding.ReaderQuotas = $quotas;
@@ -97,6 +105,43 @@ Function _SetImpersonateUser($client, $userName)
 	$client.Impersonate($userName) | Out-Null;
 }
 
+Function _GetChannelFactory($instanceType, $binding, $endpoint)
+{
+	return New-Object System.ServiceModel.ChannelFactory[$instanceType] -ArgumentList ($binding, $endpoint);
+}
+
+Function _GetAdfsToken($serviceInfo)
+{
+	$binding = New-Object -TypeName System.ServiceModel.WS2007HttpBinding -ArgumentList ([System.ServiceModel.SecurityMode] 'TransportWithMessageCredential');
+	$binding.Security.Message.ClientCredentialType = 'UserName';
+	$binding.Security.Message.EstablishSecurityContext = $false;
+
+	$endpoint = New-Object -TypeName System.ServiceModel.EndpointAddress -ArgumentList ($serviceInfo.AdfsUrl);
+
+	$factory = New-Object -TypeName System.ServiceModel.Security.WSTrustChannelFactory -ArgumentList ($binding, $endpoint);
+
+	$credential = [System.Net.NetworkCredential]$serviceInfo.Credential;
+
+	if ($credential.Domain)
+	{
+		$fullUsername = "{0}\{1}" -f $credential.Domain, $credential.Username;
+	}
+	else
+	{
+		$fullUsername = $credential.Username;
+	}
+
+	$factory.Credentials.UserName.UserName = $fullUsername;
+	$factory.Credentials.UserName.Password = $credential.Password;
+	$channel = $factory.CreateChannel();
+
+	$request = New-Object -TypeName System.IdentityModel.Protocols.WSTrust.RequestSecurityToken -Property @{
+	    RequestType   = [System.IdentityModel.Protocols.WSTrust.RequestTypes]::Issue
+	    AppliesTo     = $serviceInfo.EndpointUrl
+	}
+
+	return $channel.Issue($request);
+}
 
 <#
 **************************************************
@@ -155,9 +200,9 @@ Function Get-TridionCoreServiceClient
 
         # Load information about the Core Service client available on this system
         $serviceInfo = Get-TridionCoreServiceSettings
-        
+
         Write-Verbose ("Connecting to the Core Service at {0}..." -f $serviceInfo.HostName);
-        
+
         # Load the Core Service Client
         $endpoint = New-Object System.ServiceModel.EndpointAddress -ArgumentList $serviceInfo.EndpointUrl
         $binding = _GetCoreServiceBinding;
@@ -168,36 +213,47 @@ Function Get-TridionCoreServiceClient
         $assembly = [Reflection.Assembly]::Load($assemblyBytes);
 		$instanceType = $assembly.GetType($serviceInfo.ClassName, $true, $true);
     }
-    
+
     Process
     {
         try
         {
-			$proxy = _NewAssemblyInstance $instanceType.FullName $binding $endpoint;
-			if ($serviceInfo.Credential)
+			if ($serviceInfo.ConnectionType -eq 'Federation' -or $serviceInfo.ConnectionType -eq 'Federation-SSL')
 			{
-				_SetCredential $proxy $serviceInfo.Credential;
+				Write-Verbose "Using Federation";
+				$script:channelFactory = _GetChannelFactory $instanceType $binding $endpoint;
+				$token = _GetAdfsToken $serviceInfo;
+				$proxy = $channelFactory.CreateChannelWithIssuedToken($token);
+			}
+			else
+			{
+				$proxy = _NewAssemblyInstance $instanceType.FullName $binding $endpoint;
 
-				if ($binding.Security.Transport.ClientCredentialType -eq "Basic")
+				if ($serviceInfo.Credential)
 				{
-					if ($proxy.ClientCredentials.Windows.ClientCredential.Domain)
+					_SetCredential $proxy $serviceInfo.Credential;
+
+					if ($binding.Security.Transport.ClientCredentialType -eq "Basic")
 					{
-						$fullUsername = "{0}\{1}" -f $proxy.ClientCredentials.Windows.ClientCredential.Domain, $proxy.ClientCredentials.Windows.ClientCredential.Username
+						if ($proxy.ClientCredentials.Windows.ClientCredential.Domain)
+						{
+							$fullUsername = "{0}\{1}" -f $proxy.ClientCredentials.Windows.ClientCredential.Domain, $proxy.ClientCredentials.Windows.ClientCredential.Username
+						}
+						else
+						{
+							$fullUsername = $proxy.ClientCredentials.Windows.ClientCredential.Username
+						}
+						$proxy.ClientCredentials.UserName.UserName = $fullUsername;
+						$proxy.ClientCredentials.UserName.Password = $proxy.ClientCredentials.Windows.ClientCredential.Password;
 					}
-					else
-					{
-						$fullUsername = $proxy.ClientCredentials.Windows.ClientCredential.Username
-					}
-					$proxy.ClientCredentials.UserName.UserName = $fullUsername;
-					$proxy.ClientCredentials.UserName.Password = $proxy.ClientCredentials.Windows.ClientCredential.Password;
+				}
+
+				if ($ImpersonateUserName)
+				{
+					_SetImpersonateUser $proxy $ImpersonateUserName;
 				}
 			}
 
-			if ($ImpersonateUserName)
-			{
-				_SetImpersonateUser $proxy $ImpersonateUserName;
-			}
-			
             return $proxy;
         }
         catch [System.Exception]
@@ -251,15 +307,29 @@ Function Close-TridionCoreServiceClient
 
 	Process
 	{
-		if ($client -ne $null) 
+		if ($script:channelFactory -ne $null)
 		{
-			if ($client.State -eq 'Faulted')
+			if ($script:channelFactory.State -eq 'Faulted')
 			{
-				$client.Abort() | Out-Null;
+				$script:channelFactory.Abort() | Out-Null;
 			}
 			else
 			{
-				$client.Close() | Out-Null; 
+				$script:channelFactory.Close() | Out-Null; 
+			}
+		} 
+		else
+		{
+			if ($client -ne $null) 
+			{
+				if ($client.State -eq 'Faulted')
+				{
+					$client.Abort() | Out-Null;
+				}
+				else
+				{
+					$client.Close() | Out-Null; 
+				}
 			}
 		}
 	}
