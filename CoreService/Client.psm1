@@ -107,7 +107,10 @@ Function _SetImpersonateUser($client, $userName)
 
 Function _GetChannelFactory($instanceType, $binding, $endpoint)
 {
-	return New-Object System.ServiceModel.ChannelFactory[$instanceType] -ArgumentList ($binding, $endpoint);
+	$factory = New-Object System.ServiceModel.ChannelFactory[$instanceType] -ArgumentList ($binding, $endpoint);
+	$factory.Credentials.UseIdentityConfiguration = $true;
+
+	return $factory;
 }
 
 Function _GetAdfsToken($serviceInfo)
@@ -136,8 +139,9 @@ Function _GetAdfsToken($serviceInfo)
 	$channel = $factory.CreateChannel();
 
 	$request = New-Object -TypeName System.IdentityModel.Protocols.WSTrust.RequestSecurityToken -Property @{
-	    RequestType   = [System.IdentityModel.Protocols.WSTrust.RequestTypes]::Issue
-	    AppliesTo     = $serviceInfo.EndpointUrl
+	    RequestType = [System.IdentityModel.Protocols.WSTrust.RequestTypes]::Issue
+	    AppliesTo   = $serviceInfo.EndpointUrl
+		TokenType   = 'urn:oasis:names:tc:SAML:2.0:assertion'
 	}
 
 	return $channel.Issue($request);
