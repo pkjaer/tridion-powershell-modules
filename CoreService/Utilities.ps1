@@ -153,6 +153,7 @@ function _GetDefaultData($Client, $ItemType, $Parent, $Name = $null)
 
 function _SaveItem($Client, $Item, $IsNew)
 {
+	if ($Client -eq $null) { throw "Failed to save. Reason: client is null"}
 	$readOptions = New-Object Tridion.ContentManager.CoreService.Client.ReadOptions;
 	if ($IsNew)
 	{
