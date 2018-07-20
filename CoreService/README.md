@@ -11,8 +11,9 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 ### v2.4.2
 
 - Added a function to get a list of workflow items (`Get-TridionWorkflowItem`) - optionally filtered by status and/or who the item is assigned to.
+- Added support for Active Directory Federation Services.
 
-Special thanks to Sayantan Basu for his contributions to this version.
+Special thanks to Sayantan Basu and Mihai Cadariu for their contributions to this version.
 
 ### v2.4.1
 
