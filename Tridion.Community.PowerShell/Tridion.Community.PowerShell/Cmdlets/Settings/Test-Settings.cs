@@ -108,26 +108,40 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets.Settings
             catch (ProtocolException ex)
             {
                 WriteVerbose($"\tServer does not support this combination.");
-                WriteDebug($"\tException: {ex}");
+                WriteDebug($"\tException: {ExceptionToString(ex)}");
             }
             catch (CommunicationException ex)
             {
                 if (ex.InnerException?.HResult == -2147012867)
                 {
                     WriteVerbose("\tNo response.");
-                    WriteDebug($"\tException: {ex}");
+                    WriteDebug($"\tException: {ExceptionToString(ex)}");
                 }
                 else
                 {
                     WriteVerbose($"\tCommunication error: {ex.Message}");
-                    WriteDebug($"\tException: {ex}");
+                    WriteDebug($"\tException: {ExceptionToString(ex)}");
                 }
             }
             catch (Exception ex)
             {
-                WriteError(new ErrorRecord(ex, "AutoDetect", ErrorCategory.NotSpecified, this));
+                WriteWarning("An unknown exception occurred!");
+                WriteWarning(ExceptionToString(ex));
+                //WriteError(new ErrorRecord(ex, "AutoDetect", ErrorCategory.NotSpecified, this));
             }
             return false;
+        }
+
+        protected string ExceptionToString(Exception ex)
+        {
+            var message = ex.ToString();
+            var inner = ex.InnerException;
+            while (inner != null)
+            {
+                message += "\nInner exception:\n" + inner;
+                inner = inner.InnerException;
+            }
+            return message;
         }
 
         // TODO: Get rid of Version altogether? Or at least clean this up (SupportedTridionVersions enum?)

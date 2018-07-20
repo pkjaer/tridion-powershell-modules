@@ -3,6 +3,7 @@ using System;
 using System.Net;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
+using System.ServiceModel.Security;
 using System.Xml;
 
 namespace Tridion.Community.PowerShell.CoreService
@@ -76,6 +77,8 @@ namespace Tridion.Community.PowerShell.CoreService
             var client = new SessionAwareCoreServiceClient(binding, endpoint);
             var networkCredential = settings.Credential?.GetNetworkCredential();
 
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
             if (settings.CredentialType == SupportedCredentialType.Basic)
             {
                 if (networkCredential == null)
@@ -96,6 +99,8 @@ namespace Tridion.Community.PowerShell.CoreService
             {
                 client.ClientCredentials.Windows.ClientCredential = networkCredential;
             }
+
+            client.ClientCredentials.ServiceCertificate.Authentication.CertificateValidationMode = X509CertificateValidationMode.PeerOrChainTrust;
 
             if (!string.IsNullOrWhiteSpace(impersonateUserName))
             {

@@ -10,6 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="help\**" />
+    <EmbeddedResource Remove="help\**" />
+    <None Remove="help\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Tridion-CoreService.psd1" />
   </ItemGroup>
 
@@ -27,6 +33,12 @@
 
   <ItemGroup>
     <WCFMetadata Include="Connected Services" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="en-US\Tridion.Community.PowerShell.CoreService.dll-Help.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

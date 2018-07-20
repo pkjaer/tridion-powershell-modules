@@ -1,6 +1,7 @@
 ﻿using CoreService;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Management.Automation;
 using System.Text.RegularExpressions;
@@ -79,8 +80,12 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
         protected IEnumerable<T> GetIdentifiableObjectsFromParam<T>(PSObject[] parameter) where T : IdentifiableObjectData
         {
             var result = new List<T>();
+            if (parameter == null) return result;
+
             foreach (var p in parameter)
             {
+                if (p == null) continue;
+
                 if (p.BaseObject is T obj)
                 {
                     WriteDebug($"Parameter is of type {typeof(T).Name} -- reusing the object.");
@@ -121,6 +126,15 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
             {
                 WriteObject(obj);
             }
+        }
+
+        protected string GetSettingsPath()
+        {
+            string currentDir = CurrentProviderLocation("FileSystem")?.ProviderPath;
+            if (string.IsNullOrWhiteSpace(currentDir)) return null;
+
+            string directory = Path.Combine(currentDir, "Settings");
+            return Path.Combine(directory, "CoreServiceSettings.xml");
         }
     }
 }

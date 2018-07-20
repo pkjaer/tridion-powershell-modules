@@ -13,7 +13,8 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
 
         // The "friendly" name of the Group to load. Wildcards are supported.
         [Parameter(Position = 0, Mandatory = true, ValueFromPipelineByPropertyName = true, ParameterSetName = "ByDescription")]
-        [ValidateNotNullOrEmpty()]
+        [ValidateNotNullOrEmpty]
+        [SupportsWildcards]
         public string Description { get; set; }
 
 		// Load all properties for each entry in the list. By default, only some properties are loaded (for performance reasons).

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Management.Automation;
 using System.Reflection;
 
@@ -59,6 +60,28 @@ namespace Tridion.Community.PowerShell.CoreService
                     _instance = value ?? throw new ArgumentNullException(nameof(Instance));
                 }
             }
+        }
+
+        public static CoreServiceSettings Load(string path)
+        {
+            var ps = System.Management.Automation.PowerShell.Create();
+            ps.AddCommand("Import-Clixml");
+            ps.AddParameter("Path", path);
+
+            var result = ps.Invoke().FirstOrDefault();
+            return result?.BaseObject as CoreServiceSettings;
+        }
+
+        public bool Save(string path)
+        {
+            var ps = System.Management.Automation.PowerShell.Create();
+            ps.AddCommand("Export-Clixml");
+            ps.AddParameter("Path", path);
+            ps.AddParameter("InputObject", this);
+            ps.AddParameter("Confirm", false);
+            ps.AddParameter("Force");
+            ps.Invoke();
+            return !ps.HadErrors;
         }
 
         public CoreServiceSettings()

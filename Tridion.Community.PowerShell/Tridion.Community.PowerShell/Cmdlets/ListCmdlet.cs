@@ -16,6 +16,7 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
 
         [Parameter(Position = 0, Mandatory = true, ValueFromPipelineByPropertyName = true, ParameterSetName = ParameterSetByName, HelpMessage = Help.GetList.ParamName)]
         [ValidateNotNullOrEmpty]
+        [SupportsWildcards]
         [Alias("Title")]
         public string Name { get; set; }
 

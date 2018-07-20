@@ -56,7 +56,11 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
 
             if (Persist.IsPresent)
             {
-                WriteWarning($"TODO: Persist specified. Store the settings for next time");
+                string path = GetSettingsPath();
+                if (!settings.Save(path))
+                {
+                    WriteWarning($"Failed to save your settings for next time. Perhaps you do not have permissions to modify '{path}'?");
+                }
             }
 
             CoreServiceSettings.Instance = settings;

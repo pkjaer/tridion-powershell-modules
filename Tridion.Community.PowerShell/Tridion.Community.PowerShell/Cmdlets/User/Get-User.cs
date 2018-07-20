@@ -15,6 +15,7 @@ namespace Tridion.Community.PowerShell.CoreService.Cmdlets
         // The "friendly" name of the user to load. Wildcards are supported.
         [Parameter(Position = 0, Mandatory = true, ValueFromPipelineByPropertyName = true, ParameterSetName = "ByDescription")]
         [ValidateNotNullOrEmpty()]
+        [SupportsWildcards]
         public string Description { get; set; }
 
 		// Only return the currently logged on user.
