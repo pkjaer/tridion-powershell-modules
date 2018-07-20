@@ -77,9 +77,11 @@ Function _ConvertOldSettings($settings)
 	if ($upgradeNeeded)
 	{
 		Write-Verbose "Upgrading your settings..."
+		$host = $settings.HostName;
 		_AddSettingIfMissing -Object $settings -Name 'ConnectionSendTimeout' -Value '00:01:00';
 		_AddSettingIfMissing -Object $settings -Name 'Credential' -Value ([PSCredential]$null);
 		_AddSettingIfMissing -Object $settings -Name 'CredentialType' -Value 'Default';
+		_AddSettingIfMissing -Object $settings -Name "AdfsUrl" -Value "https://$host/adfs/services/trust/13/usernamemixed";
 		_RemoveSettingIfPresent -Object $settings -Name 'UserName';
 		$settings.ModuleVersion = $moduleVersion;
 		_PersistSettings $settings;
