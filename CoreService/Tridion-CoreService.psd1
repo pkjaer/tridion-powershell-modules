@@ -12,7 +12,7 @@
 ModuleToProcess = ''
 
 # Version number of this module.
-ModuleVersion = '2.4.2'
+ModuleVersion = '2.4.3.1'
 
 # ID used to uniquely identify this module
 GUID = '32e566fb-d28d-43e7-8786-1181ef91a9fd'
@@ -27,7 +27,7 @@ CompanyName = 'SDL'
 Copyright = ''
 
 # Description of the functionality provided by this module
-Description = "This project contains Windows PowerShell modules that allow you to easily interact with the SDL Tridion / SDL Web content management system and perform various administrative tasks. Currently supported Tridion versions: 2011 SP1, 2013 GA, 2013 SP1, Web 8.1, and Web 8.5"
+Description = "This project contains Windows PowerShell modules that allow you to easily interact with the SDL Tridion / SDL Web content management system and perform various administrative tasks. Currently supported Tridion versions: 2011 SP1, 2013 GA, 2013 SP1, Web 8.1, Web 8.5 and Sites 9.0"
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '3.0'

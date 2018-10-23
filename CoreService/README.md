@@ -8,6 +8,10 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 ## Release notes
 
+### v2.4.3
+
+- Added support for Sites 9.0 (e.g. "Set-TridionCoreServiceSettings -Version Sites-9.0")
+
 ### v2.4.2
 
 - Added a function to get a list of workflow items (`Get-TridionWorkflowItem`) - optionally filtered by status and/or who the item is assigned to.
