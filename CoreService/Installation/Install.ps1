@@ -25,7 +25,8 @@ $files = @(
 	'Settings.psm1', 
 	'Tridion-CoreService.psd1', 
 	'Trustees.psm1',
-	'Utilities.ps1'
+	'Utilities.ps1',
+	'Workflow.psm1'
 );
 
 
