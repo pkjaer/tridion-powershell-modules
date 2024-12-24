@@ -115,7 +115,7 @@ Describe "Core Service Settings Tests" {
 			{ Set-TridionCoreServiceSettings -Version 'FakeVersion' } | Should Throw;
 			
 			# Test the set parameters
-			$validVersions = @('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1', 'Web-8.5', 'Sites-9.0');
+			$validVersions = @('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1', 'Web-8.5', 'Sites-9.0', 'Sites-10.0', 'Sites-10.1');
 			foreach ($version in $validVersions)
 			{
 				(Set-TridionCoreServiceSettings -Version $version -PassThru).Version | Should Be $version;
@@ -248,6 +248,8 @@ Describe "Core Service Settings Tests" {
 				'Web-8.1' = 'localhost/webservices/CoreService201501.svc/wsHttp';
 				'Web-8.5' = 'localhost/webservices/CoreService201603.svc/wsHttp';
 				'Sites-9.0' = 'localhost/webservices/CoreService201701.svc/wsHttp';
+				'Sites-10.0' = 'localhost/webservices/CoreService202201.svc/wsHttp';
+				'Sites-10.1' = 'localhost/webservices/CoreService202301.svc/wsHttp';
 			}
 				
 			foreach ($entry in $relativeUrls.GetEnumerator())
@@ -269,6 +271,8 @@ Describe "Core Service Settings Tests" {
 				'Web-8.1' = 'localhost/webservices/CoreService201501.svc/basicHttp';
 				'Web-8.5' = 'localhost/webservices/CoreService201603.svc/basicHttp';
 				'Sites-9.0' = 'localhost/webservices/CoreService201701.svc/basicHttp';
+				'Sites-10.0' = 'localhost/webservices/CoreService202201.svc/basicHttp';
+				'Sites-10.1' = 'localhost/webservices/CoreService202301.svc/basicHttp';
 			}
 				
 			foreach ($entry in $relativeUrls.GetEnumerator())
@@ -288,6 +292,8 @@ Describe "Core Service Settings Tests" {
 				'Web-8.1' = 'localhost:2660/CoreService/201501/netTcp';
 				'Web-8.5' = 'localhost:2660/CoreService/201603/netTcp';
 				'Sites-9.0' = 'localhost:2660/CoreService/201701/netTcp';
+				'Sites-10.0' = 'localhost:2660/CoreService/202201/netTcp';
+				'Sites-10.1' = 'localhost:2660/CoreService/202301/netTcp';
 				}
 				
 			foreach ($entry in $relativeUrls.GetEnumerator())

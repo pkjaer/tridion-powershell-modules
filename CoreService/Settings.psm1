@@ -202,7 +202,7 @@ Function Set-TridionCoreServiceSettings
 		[ValidateNotNullOrEmpty()]
         [string]$HostName,
 		
-		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1', 'Web-8.5', 'Sites-9.0')]
+		[ValidateSet('', '2011-SP1', '2013', '2013-SP1', 'Web-8.1', 'Web-8.5', 'Sites-9.0', 'Sites-10.0', 'Sites-10.1')]
 		[string]$Version,
 		
 		[Parameter()]
@@ -329,6 +329,24 @@ Function Set-TridionCoreServiceSettings
 												else { if ($basic) {"/webservices/CoreService201701.svc/basicHttp"}
 												else { if ($federation) {"/webservices/CoreService201701.svc/wsFederationHttp"}
 												else  { "/webservices/CoreService201701.svc/wsHttp" } } };
+					$result.EndpointUrl = (@($protocol, $host, $port, $relativeUrl) -join "");
+				}
+				"Sites-10.0"
+				{
+					$result.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Sites_10_0.dll';
+					$relativeUrl = if ($netTcp) { "/CoreService/202201/netTcp" }
+												else { if ($basic) {"/webservices/CoreService202201.svc/basicHttp"}
+												else { if ($federation) {"/webservices/CoreService202201.svc/wsFederationHttp"}
+												else  { "/webservices/CoreService202201.svc/wsHttp" } } };
+					$result.EndpointUrl = (@($protocol, $host, $port, $relativeUrl) -join "");
+				}
+				"Sites-10.1"
+				{
+					$result.AssemblyPath = Join-Path $clientDir 'Tridion.ContentManager.CoreService.Client.Sites_10_1.dll';
+					$relativeUrl = if ($netTcp) { "/CoreService/202301/netTcp" }
+												else { if ($basic) {"/webservices/CoreService202301.svc/basicHttp"}
+												else { if ($federation) {"/webservices/CoreService202301.svc/wsFederationHttp"}
+												else  { "/webservices/CoreService202301.svc/wsHttp" } } };
 					$result.EndpointUrl = (@($protocol, $host, $port, $relativeUrl) -join "");
 				}
 			}
