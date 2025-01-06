@@ -8,6 +8,11 @@ This module contains cmdlets that allow you to talk to the Tridion Content Manag
 
 ## Release notes
 
+### v2.4.4
+
+- Added support for Sites 10.0 (e.g. "Set-TridionCoreServiceSettings -Version Sites-10.0")
+- Added support for Sites 10.1 (e.g. "Set-TridionCoreServiceSettings -Version Sites-10.1")
+
 ### v2.4.3
 
 - Added support for Sites 9.0 (e.g. "Set-TridionCoreServiceSettings -Version Sites-9.0")

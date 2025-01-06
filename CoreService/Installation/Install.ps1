@@ -17,6 +17,8 @@ $files = @(
 	'Clients/Tridion.ContentManager.CoreService.Client.Web_8_1.dll',
     'Clients/Tridion.ContentManager.CoreService.Client.Web_8_5.dll',
     'Clients/Tridion.ContentManager.CoreService.Client.Sites_9_0.dll',
+	'Clients/Tridion.ContentManager.CoreService.Client.Sites_10_0.dll',
+	'Clients/Tridion.ContentManager.CoreService.Client.Sites_10_1.dll',
 	'Installation/Verify.ps1',
 	'AppData.psm1', 
 	'Client.psm1', 
